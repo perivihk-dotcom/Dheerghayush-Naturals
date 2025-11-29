@@ -1,6 +1,21 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-import { testimonials } from '../data/mock';
+import { ChevronLeft, ChevronRight, Quote, Star, ExternalLink } from 'lucide-react';
+import { testimonials, googleRating } from '../data/mock';
+
+// Star Rating Component
+const StarRating = ({ rating, size = 16 }) => {
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          size={size}
+          className={star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
+        />
+      ))}
+    </div>
+  );
+};
 
 const Testimonials = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -22,9 +37,34 @@ const Testimonials = () => {
   return (
     <section className="py-12 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-10">
-          What People Think About Us
-        </h2>
+        {/* Header with Google Rating */}
+        <div className="text-center mb-10">
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+            What People Think About Us
+          </h2>
+          
+          {/* Google Rating Badge */}
+          <a 
+            href={googleRating.mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 bg-white border border-gray-200 rounded-full px-5 py-2.5 shadow-sm hover:shadow-md transition-shadow"
+          >
+            <img 
+              src="https://www.google.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" 
+              alt="Google" 
+              className="h-5 object-contain"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-gray-800">{googleRating.rating}</span>
+              <div className="flex flex-col items-start">
+                <StarRating rating={5} size={14} />
+                <span className="text-xs text-gray-500">{googleRating.totalReviews} reviews</span>
+              </div>
+            </div>
+            <ExternalLink size={14} className="text-gray-400" />
+          </a>
+        </div>
         
         <div className="relative">
           <div className="overflow-hidden">
@@ -47,13 +87,25 @@ const Testimonials = () => {
                           className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg"
                         />
                       </div>
-                      <div className="text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
-                          <Quote size={24} className="text-[#4CAF50] rotate-180" />
+                      <div className="text-center md:text-left flex-1">
+                        <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                           <h3 className="font-semibold text-gray-800 text-lg">{testimonial.name}</h3>
+                          {testimonial.isGoogleReview && (
+                            <img 
+                              src="https://www.google.com/favicon.ico" 
+                              alt="Google Review" 
+                              className="w-4 h-4"
+                            />
+                          )}
                         </div>
-                        <p className="text-sm text-[#4CAF50] mb-4">{testimonial.duration}</p>
-                        <p className="text-gray-600 leading-relaxed">{testimonial.text}</p>
+                        <div className="flex items-center justify-center md:justify-start gap-2 mb-3">
+                          <StarRating rating={testimonial.rating} size={16} />
+                          <span className="text-sm text-gray-500">{testimonial.timeAgo}</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <Quote size={20} className="text-[#4CAF50] rotate-180 flex-shrink-0 mt-1 hidden md:block" />
+                          <p className="text-gray-600 leading-relaxed">{testimonial.text}</p>
+                        </div>
                       </div>
                     </div>
                   </div>
