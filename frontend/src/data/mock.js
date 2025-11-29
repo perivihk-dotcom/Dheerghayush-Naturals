@@ -365,36 +365,63 @@ export const combos = [
   }
 ];
 
-export const testimonials = [
+// Google Reviews - 5 Star Reviews from Google Maps
+export const googleReviews = [
   {
     id: 1,
-    name: "Priya Sharma",
-    duration: "Since Two Years",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-    text: "I've been ordering from Dheerghayush Naturals for the past 2 years and the quality has been consistently excellent. Their wood pressed oils and desi ghee are authentic and pure. The packaging is also eco-friendly which I appreciate. Highly recommend to everyone!"
+    name: "Srinivas Reddy",
+    rating: 5,
+    timeAgo: "2 months ago",
+    image: "https://ui-avatars.com/api/?name=Srinivas+Reddy&background=4CAF50&color=fff&size=100",
+    text: "Excellent quality organic products! I have been buying their wood pressed groundnut oil and A2 cow ghee for the past 6 months. The taste and aroma are just like the traditional homemade ones. Highly recommended for health-conscious people.",
+    isGoogleReview: true
   },
   {
     id: 2,
-    name: "Rajesh Kumar",
-    duration: "Since One Year",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
-    text: "The wild honey from Dheerghayush Naturals is the best I've ever tasted. You can tell it's genuine and unprocessed. The delivery is always on time and customer service is excellent. Will continue to order from them."
+    name: "Lakshmi Devi",
+    rating: 5,
+    timeAgo: "3 weeks ago",
+    image: "https://ui-avatars.com/api/?name=Lakshmi+Devi&background=8BC34A&color=fff&size=100",
+    text: "Best place for pure and natural products in Nellore. Their wild honey is 100% genuine and millets are of premium quality. The shop owner is very knowledgeable and helpful. Will definitely continue buying from here.",
+    isGoogleReview: true
   },
   {
     id: 3,
-    name: "Sunita Reddy",
-    duration: "Since Three Years",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
-    text: "Being health conscious, I switched to millets from Dheerghayush Naturals and it has made a huge difference. The millets are unpolished, organic, and taste great. My whole family has benefited from this switch. Thank you!"
+    name: "Venkat Rao",
+    rating: 5,
+    timeAgo: "1 month ago",
+    image: "https://ui-avatars.com/api/?name=Venkat+Rao&background=FF9800&color=fff&size=100",
+    text: "Amazing collection of organic products. I switched to their millets and pulses 3 months back and can feel the difference in health. Products are fresh, well-packed and reasonably priced. Great customer service too!",
+    isGoogleReview: true
   },
   {
     id: 4,
-    name: "Arun Patel",
-    duration: "Since Six Months",
-    image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
-    text: "Started with their pulses and now I order almost everything from them. The quality is unmatched. Their A2 cow ghee is pure and aromatic. Prices are reasonable for the quality they provide. Definitely a loyal customer now."
+    name: "Padma Kumari",
+    rating: 5,
+    timeAgo: "2 weeks ago",
+    image: "https://ui-avatars.com/api/?name=Padma+Kumari&background=E91E63&color=fff&size=100",
+    text: "Finally found a trustworthy store for natural products! Their desi ghee made using traditional bilona method is absolutely pure. My family loves the quality. They also have excellent skincare products. 5 stars!",
+    isGoogleReview: true
+  },
+  {
+    id: 5,
+    name: "Ravi Krishna",
+    rating: 5,
+    timeAgo: "1 week ago",
+    image: "https://ui-avatars.com/api/?name=Ravi+Krishna&background=2196F3&color=fff&size=100",
+    text: "Outstanding quality and service! Bought their complete millet combo and wood pressed oils. Everything is authentic and chemical-free. The owner personally ensures quality. This is the go-to shop for organic products.",
+    isGoogleReview: true
   }
 ];
+
+// Google Business Rating Info
+export const googleRating = {
+  rating: 4.9,
+  totalReviews: 14,
+  mapsUrl: "https://www.google.com/maps/place/Dheerghayush+naturals/@14.4393297,79.9758369,14z/data=!4m8!3m7!1s0x3a4cf3877a32464f:0x83e265bb829c59f8!8m2!3d14.4291837!4d79.971481!9m1!1b1!16s%2Fg%2F11wmtbsd71?entry=ttu"
+};
+
+export const testimonials = googleReviews;
 
 export const healthBenefits = [
   { id: 1, name: "Digestive Health", icon: "Salad" },
