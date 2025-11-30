@@ -455,20 +455,26 @@ const AdminOrders = () => {
                     {/* Actions */}
                     <div className="mt-6 bg-white rounded-xl p-4 border border-gray-100">
                       <h4 className="font-semibold text-gray-900 mb-4">
-                        {order.order_status === 'replacement_requested' ? 'Update Replacement Status' : 'Update Order Status'}
+                        {replacementStatuses.includes(order.order_status) ? 'Update Replacement Status' : 'Update Order Status'}
                       </h4>
                       <div className="flex flex-wrap gap-2">
-                        {order.order_status === 'replacement_requested' ? (
+                        {replacementStatuses.includes(order.order_status) ? (
                           // Replacement status options
-                          ['replacement_accepted', 'replacement_rejected', 'replacement_processing', 'replacement_completed'].map((status) => (
+                          ['replacement_requested', 'replacement_accepted', 'replacement_rejected', 'replacement_processing', 'replacement_shipped', 'replacement_out_for_delivery', 'replacement_delivered'].map((status) => (
                             <button
                               key={status}
                               onClick={() => updateOrderStatus(order.order_id, status)}
+                              disabled={order.order_status === status}
                               className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                                order.order_status === status
+                                  ? 'bg-pink-200 text-pink-800 border-2 border-pink-400 cursor-default shadow-sm' :
                                 status === 'replacement_accepted' ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' :
                                 status === 'replacement_rejected' ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200' :
                                 status === 'replacement_processing' ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200 border border-yellow-200' :
-                                'bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-200'
+                                status === 'replacement_shipped' ? 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border border-indigo-200' :
+                                status === 'replacement_out_for_delivery' ? 'bg-cyan-100 text-cyan-700 hover:bg-cyan-200 border border-cyan-200' :
+                                status === 'replacement_delivered' ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200' :
+                                'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                               }`}
                             >
                               {status.replace(/replacement_/g, '').replace(/\b\w/g, l => l.toUpperCase())}
@@ -476,14 +482,14 @@ const AdminOrders = () => {
                           ))
                         ) : (
                           // Normal order status options
-                          ['pending', 'confirmed', 'shipped', 'out_for_delivery', 'delivered'].map((status) => (
+                          ['pending', 'confirmed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'].map((status) => (
                             <button
                               key={status}
                               onClick={() => updateOrderStatus(order.order_id, status, status === 'delivered' ? 'paid' : null)}
                               disabled={order.order_status === status}
                               className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
                                 order.order_status === status
-                                  ? 'bg-blue-100 text-blue-700 border-2 border-blue-300 cursor-default'
+                                  ? 'bg-blue-200 text-blue-800 border-2 border-blue-400 cursor-default shadow-sm'
                                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
                               }`}
                             >
