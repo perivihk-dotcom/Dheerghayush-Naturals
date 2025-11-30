@@ -94,6 +94,9 @@ const AdminOrders = () => {
   };
 
   const getStepCount = (stepId) => {
+    if (stepId === 'replacement') {
+      return allOrders.filter(order => replacementStatuses.includes(order.order_status)).length;
+    }
     return allOrders.filter(order => order.order_status === stepId).length;
   };
 
