@@ -1,26 +1,20 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Phone, ShoppingCart, Menu, X, ChevronDown, User } from 'lucide-react';
-import { categories, businessInfo } from '../data/mock';
+import { Link, useLocation } from 'react-router-dom';
+import { Search, Phone, ShoppingCart, Menu, X, User } from 'lucide-react';
+import { businessInfo } from '../data/mock';
 import { useUser } from '../context/UserContext';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const Header = ({ cartItems, setShowCart, setShowAuth }) => {
   const { isAuthenticated, user } = useUser();
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showCategories, setShowCategories] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
-  const navigate = useNavigate();
 
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const isActive = (path) => location.pathname === path;
-
-  const handleCategoryClick = (slug) => {
-    setShowCategories(false);
-    setShowMobileMenu(false);
-    navigate(`/products?category=${slug}`);
-  };
 
   return (
     <header className="sticky top-0 z-50 bg-white shadow-sm">
@@ -54,8 +48,8 @@ const Header = ({ cartItems, setShowCart, setShowAuth }) => {
               alt={businessInfo.name}
               className="h-12 w-12 object-contain rounded-full"
             />
-            <div className="hidden sm:block">
-              <h1 className="text-xl font-bold text-gray-800 leading-tight">Dheerghayush</h1>
+            <div>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-800 leading-tight">Dheerghayush</h1>
               <p className="text-xs text-[#4CAF50] font-medium">Naturals</p>
             </div>
           </Link>
@@ -104,41 +98,7 @@ const Header = ({ cartItems, setShowCart, setShowAuth }) => {
       {/* Navigation */}
       <nav className="border-t border-gray-100 hidden md:block">
         <div className="max-w-7xl mx-auto px-4">
-          <ul className="flex items-center gap-8">
-            <li className="relative">
-              <button 
-                className="flex items-center gap-1 py-3 px-4 bg-[#4CAF50] text-white font-medium rounded-t-lg -mb-px"
-                onClick={() => setShowCategories(!showCategories)}
-                onMouseEnter={() => setShowCategories(true)}
-              >
-                Shop by Categories
-                <ChevronDown size={16} className={`transition-transform ${showCategories ? 'rotate-180' : ''}`} />
-              </button>
-              
-              {showCategories && (
-                <div 
-                  className="absolute top-full left-0 bg-white shadow-lg rounded-b-lg rounded-r-lg py-2 min-w-[200px] z-50"
-                  onMouseLeave={() => setShowCategories(false)}
-                >
-                  <button
-                    onClick={() => { navigate('/products'); setShowCategories(false); }}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors w-full text-left"
-                  >
-                    <span className="text-gray-700 font-medium">All Products</span>
-                  </button>
-                  {categories.map((cat) => (
-                    <button 
-                      key={cat.id}
-                      onClick={() => handleCategoryClick(cat.slug)}
-                      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors w-full text-left"
-                    >
-                      <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-full object-cover" />
-                      <span className="text-gray-700">{cat.name}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </li>
+          <ul className="flex items-center justify-center gap-12 py-2">
             <li>
               <Link 
                 to="/" 
@@ -159,16 +119,7 @@ const Header = ({ cartItems, setShowCart, setShowAuth }) => {
                 All Products
               </Link>
             </li>
-            <li>
-              <Link 
-                to="/combos" 
-                className={`py-3 font-medium transition-colors ${
-                  isActive('/combos') ? 'text-[#4CAF50]' : 'text-gray-700 hover:text-[#4CAF50]'
-                }`}
-              >
-                Combos
-              </Link>
-            </li>
+
             <li>
               <Link 
                 to="/our-story" 
@@ -206,27 +157,7 @@ const Header = ({ cartItems, setShowCart, setShowAuth }) => {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
             
-            <div className="space-y-1">
-              <p className="font-semibold text-gray-800 px-3 py-2">Categories</p>
-              <button
-                onClick={() => { navigate('/products'); setShowMobileMenu(false); }}
-                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full text-left"
-              >
-                <span className="text-gray-700 font-medium">All Products</span>
-              </button>
-              {categories.map((cat) => (
-                <button 
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.slug)}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-lg w-full text-left"
-                >
-                  <img src={cat.image} alt={cat.name} className="w-8 h-8 rounded-full object-cover" />
-                  <span className="text-gray-700">{cat.name}</span>
-                </button>
-              ))}
-            </div>
-            
-            <div className="border-t mt-4 pt-4 space-y-2">
+            <div className="space-y-2">
               <Link 
                 to="/" 
                 className={`block px-3 py-2 hover:bg-gray-50 rounded-lg ${isActive('/') ? 'text-[#4CAF50] bg-green-50' : 'text-gray-700'}`}
@@ -241,13 +172,7 @@ const Header = ({ cartItems, setShowCart, setShowAuth }) => {
               >
                 All Products
               </Link>
-              <Link 
-                to="/combos" 
-                className={`block px-3 py-2 hover:bg-gray-50 rounded-lg ${isActive('/combos') ? 'text-[#4CAF50] bg-green-50' : 'text-gray-700'}`}
-                onClick={() => setShowMobileMenu(false)}
-              >
-                Combos
-              </Link>
+
               <Link 
                 to="/our-story" 
                 className={`block px-3 py-2 hover:bg-gray-50 rounded-lg ${isActive('/our-story') ? 'text-[#4CAF50] bg-green-50' : 'text-gray-700'}`}

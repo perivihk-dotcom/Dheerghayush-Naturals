@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Truck, Shield, Lock } from 'lucide-react';
+import { ArrowLeft, CreditCard, Truck, Shield, Lock, MapPin, Check } from 'lucide-react';
+import { useUser } from '../context/UserContext';
 
 // Load Razorpay script dynamically
 const loadRazorpayScript = () => {
@@ -18,11 +19,15 @@ const loadRazorpayScript = () => {
   });
 };
 
-const CheckoutPage = () => {
+const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, token, isAuthenticated, BACKEND_URL } = useUser();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [useNewAddress, setUseNewAddress] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -39,13 +44,62 @@ const CheckoutPage = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    // Get cart items from navigation state
-    const items = location.state?.cartItems || [];
+    // Get cart items from navigation state or props
+    const items = location.state?.cartItems || propCartItems || [];
     if (items.length === 0) {
       navigate('/');
     }
     setCartItems(items);
-  }, [location.state, navigate]);
+    
+    // Fetch saved addresses if user is logged in
+    if (isAuthenticated && token) {
+      fetchSavedAddresses();
+      // Pre-fill user info
+      setFormData(prev => ({
+        ...prev,
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || ''
+      }));
+    }
+  }, [location.state, navigate, isAuthenticated, token, user]);
+
+  const fetchSavedAddresses = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/user/addresses`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const addresses = await response.json();
+        setSavedAddresses(addresses);
+        // Select primary address by default
+        const primary = addresses.find(a => a.is_primary);
+        if (primary) {
+          setSelectedAddressId(primary.id);
+          applyAddress(primary);
+        } else if (addresses.length > 0) {
+          setSelectedAddressId(addresses[0].id);
+          applyAddress(addresses[0]);
+        } else {
+          setUseNewAddress(true);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+    }
+  };
+
+  const applyAddress = (address) => {
+    setFormData(prev => ({
+      ...prev,
+      name: address.name,
+      phone: address.phone,
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      pincode: address.pincode
+    }));
+  };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shippingFee = subtotal > 500 ? 0 : 50;
@@ -53,9 +107,16 @@ const CheckoutPage = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    let processedValue = value;
+    
+    // Remove leading 0 from phone number
+    if (name === 'phone' && value.startsWith('0')) {
+      processedValue = value.substring(1);
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: processedValue
     }));
     // Clear error when user starts typing
     if (errors[name]) {
@@ -202,6 +263,7 @@ const CheckoutPage = () => {
 
     try {
       const orderData = {
+        user_id: isAuthenticated ? user?.id : null,
         customer_info: {
           name: formData.name,
           email: formData.email,
@@ -242,6 +304,11 @@ const CheckoutPage = () => {
 
       const order = await response.json();
       
+      // Clear the cart after successful order
+      if (clearCart) {
+        clearCart();
+      }
+      
       // Navigate to order confirmation page
       navigate(`/order-confirmation/${order.order_id}`, {
         state: { order }
@@ -273,13 +340,78 @@ const CheckoutPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Forms */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Saved Addresses */}
+            {isAuthenticated && savedAddresses.length > 0 && (
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <MapPin className="text-[#4CAF50]" size={20} />
+                  <h2 className="text-lg font-semibold text-gray-900">Saved Addresses</h2>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                  {savedAddresses.map((addr) => (
+                    <div
+                      key={addr.id}
+                      onClick={() => {
+                        setSelectedAddressId(addr.id);
+                        setUseNewAddress(false);
+                        applyAddress(addr);
+                      }}
+                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                        selectedAddressId === addr.id && !useNewAddress
+                          ? 'border-[#4CAF50] bg-green-50'
+                          : 'border-gray-200 hover:border-gray-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-medium text-gray-800">{addr.name}</p>
+                          <p className="text-sm text-gray-600">{addr.address}</p>
+                          <p className="text-sm text-gray-600">{addr.city}, {addr.state} - {addr.pincode}</p>
+                          <p className="text-sm text-gray-500">Phone: {addr.phone}</p>
+                        </div>
+                        {selectedAddressId === addr.id && !useNewAddress && (
+                          <Check className="text-[#4CAF50]" size={20} />
+                        )}
+                      </div>
+                      {addr.is_primary && (
+                        <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                          Primary
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  onClick={() => {
+                    setUseNewAddress(true);
+                    setSelectedAddressId(null);
+                    setFormData(prev => ({
+                      ...prev,
+                      name: user?.name || '',
+                      email: user?.email || '',
+                      phone: user?.phone || '',
+                      address: '',
+                      city: '',
+                      state: '',
+                      pincode: ''
+                    }));
+                  }}
+                  className={`text-sm font-medium ${useNewAddress ? 'text-[#4CAF50]' : 'text-gray-600 hover:text-[#4CAF50]'}`}
+                >
+                  + Use a different address
+                </button>
+              </div>
+            )}
+
             {/* Customer Information */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className={`bg-white rounded-lg shadow-sm p-6 ${isAuthenticated && savedAddresses.length > 0 && !useNewAddress ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-8 h-8 bg-[#4CAF50] rounded-full flex items-center justify-center text-white font-semibold">
                   1
                 </div>
-                <h2 className="text-xl font-semibold text-gray-900">Customer Information</h2>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {isAuthenticated && savedAddresses.length > 0 ? 'New Delivery Address' : 'Customer Information'}
+                </h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

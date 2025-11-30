@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus, Star } from 'lucide-react';
+import { ShoppingCart, Plus, Minus, Star, AlertTriangle } from 'lucide-react';
 
-const ProductListCard = ({ product, onAddToCart }) => {
+const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
   const [quantity, setQuantity] = useState(1);
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const originalPrice = product.original_price || product.originalPrice;
+  const discount = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+  const stock = product.stock ?? 100;
+  const isLowStock = stock > 0 && stock <= 10;
 
   const handleAddToCart = () => {
     onAddToCart({ ...product, quantity });
@@ -27,9 +30,14 @@ const ProductListCard = ({ product, onAddToCart }) => {
               {discount}% OFF
             </span>
           )}
-          {product.isBestseller && (
+          {(product.is_bestseller || product.isBestseller) && (
             <span className="absolute top-2 right-2 bg-[#4CAF50] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
               Bestseller
+            </span>
+          )}
+          {isNewArrival && !(product.is_bestseller || product.isBestseller) && (
+            <span className="absolute top-2 right-2 bg-blue-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+              New Arrival
             </span>
           )}
         </div>
@@ -44,6 +52,14 @@ const ProductListCard = ({ product, onAddToCart }) => {
             
             {/* Weight */}
             <p className="text-xs sm:text-sm text-gray-500 mb-2 sm:mb-3">{product.weight}</p>
+            
+            {/* Low Stock Warning */}
+            {isLowStock && (
+              <div className="flex items-center gap-1 text-red-500 mb-2">
+                <AlertTriangle size={14} />
+                <span className="text-xs sm:text-sm font-medium">Few left!</span>
+              </div>
+            )}
             
             {/* Product Description for larger screens */}
             {product.description && (
@@ -74,9 +90,9 @@ const ProductListCard = ({ product, onAddToCart }) => {
               <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-800">
                 ₹{product.price.toFixed(2)}
               </span>
-              {product.originalPrice > product.price && (
+              {originalPrice > product.price && (
                 <span className="text-xs sm:text-sm md:text-base text-gray-400 line-through">
-                  ₹{product.originalPrice}
+                  ₹{originalPrice}
                 </span>
               )}
             </div>

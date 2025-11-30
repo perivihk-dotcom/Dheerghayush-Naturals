@@ -68,28 +68,42 @@ export const AdminProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
+    let response;
     try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/login`, {
+      response = await fetch(`${BACKEND_URL}/api/admin/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email, password })
       });
+    } catch (error) {
+      console.error('Admin login fetch error:', error);
+      return { success: false, error: 'Unable to connect to server. Please check your connection.' };
+    }
+
+    try {
+      const data = await response.json();
 
       if (response.ok) {
-        const data = await response.json();
         localStorage.setItem('admin_token', data.access_token);
         setToken(data.access_token);
         setAdmin(data.admin);
         return { success: true };
       } else {
-        const error = await response.json();
-        return { success: false, error: error.detail || 'Login failed' };
+        const errorMessage = data.detail || 'Invalid credentials. Please try again.';
+        return { success: false, error: errorMessage };
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: 'Network error. Please try again.' };
+    } catch (parseError) {
+      console.error('Response parse error:', parseError);
+      if (response.status === 404) {
+        return { success: false, error: 'Admin email not found. Please check your email.' };
+      } else if (response.status === 401) {
+        return { success: false, error: 'Incorrect password. Please try again.' };
+      } else if (response.status >= 500) {
+        return { success: false, error: 'Server error. Please try again later.' };
+      }
+      return { success: false, error: 'Invalid credentials. Please try again.' };
     }
   };
 

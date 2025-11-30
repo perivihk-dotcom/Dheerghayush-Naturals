@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -15,6 +16,9 @@ import bcrypt
 import razorpay
 import hmac
 import hashlib
+import secrets
+import sib_api_v3_sdk
+from sib_api_v3_sdk.rest import ApiException
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -34,8 +38,25 @@ RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
 razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
+# Brevo (Sendinblue) Configuration
+BREVO_API_KEY = os.environ.get('BREVO_API_KEY', '')
+BREVO_SENDER_EMAIL = os.environ.get('BREVO_SENDER_EMAIL', '')
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:3000')
+
+# Configure Brevo API
+brevo_configuration = sib_api_v3_sdk.Configuration()
+brevo_configuration.api_key['api-key'] = BREVO_API_KEY
+
 # Create the main app
 app = FastAPI(title="Dheerghayush Naturals API")
+
+# Custom exception handler to ensure JSON responses
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
 
 # Create routers
 api_router = APIRouter(prefix="/api")
@@ -193,6 +214,7 @@ class CustomerInfo(BaseModel):
     pincode: str
 
 class OrderCreate(BaseModel):
+    user_id: Optional[str] = None
     customer_info: CustomerInfo
     items: List[OrderItem]
     subtotal: float
@@ -206,6 +228,7 @@ class OrderCreate(BaseModel):
 class Order(BaseModel):
     model_config = ConfigDict(extra="ignore")
     order_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: Optional[str] = None  # Optional for guest checkout
     customer_info: CustomerInfo
     items: List[OrderItem]
     subtotal: float
@@ -215,8 +238,10 @@ class Order(BaseModel):
     razorpay_payment_id: Optional[str] = None
     razorpay_order_id: Optional[str] = None
     razorpay_signature: Optional[str] = None
-    order_status: str = "pending"  # pending, confirmed, shipped, delivered, cancelled
+    order_status: str = "pending"  # pending, confirmed, processing, shipped, out_for_delivery, delivered, cancelled
     payment_status: str = "pending"  # pending, paid, failed
+    tracking_events: List[dict] = []
+    estimated_delivery: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class OrderStatusUpdate(BaseModel):
@@ -283,6 +308,94 @@ class BannerUpdate(BaseModel):
     button_link: Optional[str] = None
     is_active: Optional[bool] = None
     order: Optional[int] = None
+
+# Address Models
+class Address(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    email: str
+    phone: str
+    address: str
+    city: str
+    state: str
+    pincode: str
+    is_primary: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class AddressCreate(BaseModel):
+    name: str
+    email: str
+    phone: str
+    address: str
+    city: str
+    state: str
+    pincode: str
+    is_primary: bool = False
+
+class AddressUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[str] = None
+    is_primary: Optional[bool] = None
+
+# Order Tracking Models
+class OrderTrackingEvent(BaseModel):
+    status: str
+    description: str
+    timestamp: datetime
+    location: Optional[str] = None
+
+# Review Models
+class Review(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    product_id: str
+    user_id: str
+    user_name: str
+    order_id: str
+    rating: int  # 1-5
+    review_text: Optional[str] = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    is_verified_purchase: bool = True
+
+class ReviewCreate(BaseModel):
+    product_id: str
+    order_id: str
+    rating: int  # 1-5
+    review_text: Optional[str] = ""
+
+class ProductRating(BaseModel):
+    product_id: str
+    average_rating: float
+    total_reviews: int
+    rating_distribution: Dict[str, int]  # {"5": 10, "4": 5, ...}
+
+# Password Reset Models
+class PasswordResetToken(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    email: str
+    token: str
+    expires_at: datetime
+    used: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+class VerifyResetTokenRequest(BaseModel):
+    token: str
 
 # ==================== HELPER FUNCTIONS ====================
 
@@ -360,6 +473,78 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         "is_admin": False
     }
 
+def generate_reset_token() -> str:
+    """Generate a secure random token for password reset"""
+    return secrets.token_urlsafe(32)
+
+async def send_password_reset_email(email: str, name: str, reset_token: str) -> bool:
+    """Send password reset email using Brevo"""
+    try:
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(brevo_configuration))
+        
+        reset_link = f"{FRONTEND_URL}/reset-password?token={reset_token}"
+        
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+                .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+                .header {{ background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }}
+                .content {{ background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }}
+                .button {{ display: inline-block; background: #4CAF50; color: white; padding: 15px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }}
+                .button:hover {{ background: #45a049; }}
+                .footer {{ text-align: center; margin-top: 20px; color: #666; font-size: 12px; }}
+                .warning {{ background: #fff3cd; border: 1px solid #ffc107; padding: 10px; border-radius: 5px; margin-top: 20px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🌿 Dheerghayush Naturals</h1>
+                    <p>Password Reset Request</p>
+                </div>
+                <div class="content">
+                    <h2>Hello {name},</h2>
+                    <p>We received a request to reset your password for your Dheerghayush Naturals account.</p>
+                    <p>Click the button below to reset your password:</p>
+                    <center>
+                        <a href="{reset_link}" class="button">Reset Password</a>
+                    </center>
+                    <p>Or copy and paste this link in your browser:</p>
+                    <p style="word-break: break-all; background: #eee; padding: 10px; border-radius: 5px;">{reset_link}</p>
+                    <div class="warning">
+                        <strong>⚠️ Important:</strong> This link will expire in 1 hour. If you didn't request this password reset, please ignore this email.
+                    </div>
+                </div>
+                <div class="footer">
+                    <p>© 2024 Dheerghayush Naturals. All rights reserved.</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email, "name": name}],
+            sender={"email": BREVO_SENDER_EMAIL, "name": "Dheerghayush Naturals"},
+            subject="Reset Your Password - Dheerghayush Naturals",
+            html_content=html_content
+        )
+        
+        api_instance.send_transac_email(send_smtp_email)
+        logger.info(f"Password reset email sent to {email}")
+        return True
+        
+    except ApiException as e:
+        logger.error(f"Brevo API error sending email: {e}")
+        return False
+    except Exception as e:
+        logger.error(f"Error sending password reset email: {e}")
+        return False
+
 # ==================== PUBLIC ROUTES ====================
 
 @api_router.get("/")
@@ -392,12 +577,12 @@ async def user_signup(signup_data: UserSignup):
         # Check if email already exists
         existing_user = await db.users.find_one({"email": signup_data.email.lower()})
         if existing_user:
-            raise HTTPException(status_code=400, detail="Email already registered")
+            raise HTTPException(status_code=400, detail="This email is already registered. Please sign in or use a different email.")
         
         # Check if phone already exists
         existing_phone = await db.users.find_one({"phone": signup_data.phone})
         if existing_phone:
-            raise HTTPException(status_code=400, detail="Phone number already registered")
+            raise HTTPException(status_code=400, detail="This phone number is already registered. Please use a different number.")
         
         # Create new user
         user = User(
@@ -440,10 +625,10 @@ async def user_login(login_data: UserLogin):
         admin = await db.admins.find_one({"email": login_data.email.lower()}, {"_id": 0})
         if admin:
             if not verify_password(login_data.password, admin['password_hash']):
-                raise HTTPException(status_code=401, detail="Invalid email or password")
+                raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
             
             if not admin.get('is_active', True):
-                raise HTTPException(status_code=401, detail="Account is disabled")
+                raise HTTPException(status_code=401, detail="Your account has been disabled. Please contact support.")
             
             access_token = create_access_token({
                 "sub": admin['id'], 
@@ -470,13 +655,13 @@ async def user_login(login_data: UserLogin):
         user = await db.users.find_one({"email": login_data.email.lower()}, {"_id": 0})
         
         if not user:
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+            raise HTTPException(status_code=404, detail="Email not found. Please check your email or sign up.")
         
         if not verify_password(login_data.password, user['password_hash']):
-            raise HTTPException(status_code=401, detail="Invalid email or password")
+            raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
         
         if not user.get('is_active', True):
-            raise HTTPException(status_code=401, detail="Account is disabled")
+            raise HTTPException(status_code=401, detail="Your account has been disabled. Please contact support.")
         
         access_token = create_access_token({"sub": user['id'], "email": user['email'], "type": "user"})
         
@@ -497,7 +682,7 @@ async def user_login(login_data: UserLogin):
         raise
     except Exception as e:
         logger.error(f"Error during login: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Something went wrong. Please try again later.")
 
 @api_router.get("/auth/me", response_model=UserProfile)
 async def get_user_profile(user: dict = Depends(get_current_user)):
@@ -508,6 +693,605 @@ async def get_user_profile(user: dict = Depends(get_current_user)):
         email=user['email'],
         phone=user['phone']
     )
+
+# ==================== FORGOT PASSWORD ROUTES ====================
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest):
+    """Request password reset - sends email with reset link"""
+    try:
+        email = request.email.lower()
+        
+        # Check if user exists
+        user = await db.users.find_one({"email": email}, {"_id": 0})
+        
+        # Always return success to prevent email enumeration
+        if not user:
+            logger.info(f"Password reset requested for non-existent email: {email}")
+            return {"message": "If an account with this email exists, you will receive a password reset link shortly."}
+        
+        # Invalidate any existing reset tokens for this user
+        await db.password_reset_tokens.update_many(
+            {"email": email, "used": False},
+            {"$set": {"used": True}}
+        )
+        
+        # Generate new reset token
+        reset_token = generate_reset_token()
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=1)
+        
+        token_doc = PasswordResetToken(
+            user_id=user['id'],
+            email=email,
+            token=reset_token,
+            expires_at=expires_at
+        )
+        
+        doc = token_doc.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        doc['expires_at'] = doc['expires_at'].isoformat()
+        
+        await db.password_reset_tokens.insert_one(doc)
+        
+        # Send email
+        email_sent = await send_password_reset_email(email, user['name'], reset_token)
+        
+        if not email_sent:
+            logger.error(f"Failed to send password reset email to {email}")
+            # Still return success to prevent enumeration
+        
+        logger.info(f"Password reset token generated for {email}")
+        return {"message": "If an account with this email exists, you will receive a password reset link shortly."}
+        
+    except Exception as e:
+        logger.error(f"Error in forgot password: {str(e)}")
+        raise HTTPException(status_code=500, detail="Something went wrong. Please try again later.")
+
+@api_router.post("/auth/verify-reset-token")
+async def verify_reset_token(request: VerifyResetTokenRequest):
+    """Verify if a password reset token is valid"""
+    try:
+        token_doc = await db.password_reset_tokens.find_one(
+            {"token": request.token, "used": False},
+            {"_id": 0}
+        )
+        
+        if not token_doc:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset link. Please request a new one.")
+        
+        # Check expiration
+        expires_at = token_doc['expires_at']
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="This reset link has expired. Please request a new one.")
+        
+        return {"valid": True, "email": token_doc['email']}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error verifying reset token: {str(e)}")
+        raise HTTPException(status_code=500, detail="Something went wrong. Please try again later.")
+
+@api_router.post("/auth/reset-password")
+async def reset_password(request: ResetPasswordRequest):
+    """Reset password using the token"""
+    try:
+        # Find and validate token
+        token_doc = await db.password_reset_tokens.find_one(
+            {"token": request.token, "used": False},
+            {"_id": 0}
+        )
+        
+        if not token_doc:
+            raise HTTPException(status_code=400, detail="Invalid or expired reset link. Please request a new one.")
+        
+        # Check expiration
+        expires_at = token_doc['expires_at']
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at)
+        
+        if datetime.now(timezone.utc) > expires_at:
+            raise HTTPException(status_code=400, detail="This reset link has expired. Please request a new one.")
+        
+        # Validate password
+        if len(request.new_password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+        
+        # Update user password
+        new_password_hash = hash_password(request.new_password)
+        
+        result = await db.users.update_one(
+            {"id": token_doc['user_id']},
+            {"$set": {"password_hash": new_password_hash}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="User not found.")
+        
+        # Mark token as used
+        await db.password_reset_tokens.update_one(
+            {"token": request.token},
+            {"$set": {"used": True}}
+        )
+        
+        logger.info(f"Password reset successful for user {token_doc['user_id']}")
+        return {"message": "Password reset successful. You can now login with your new password."}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error resetting password: {str(e)}")
+        raise HTTPException(status_code=500, detail="Something went wrong. Please try again later.")
+
+# ==================== USER ADDRESS ROUTES ====================
+
+@api_router.get("/user/addresses")
+async def get_user_addresses(user: dict = Depends(get_current_user)):
+    """Get all addresses for current user"""
+    addresses = await db.addresses.find({"user_id": user['id']}, {"_id": 0}).to_list(100)
+    for addr in addresses:
+        if isinstance(addr.get('created_at'), str):
+            addr['created_at'] = datetime.fromisoformat(addr['created_at'])
+    return addresses
+
+@api_router.post("/user/addresses", response_model=Address)
+async def create_user_address(address_data: AddressCreate, user: dict = Depends(get_current_user)):
+    """Create a new address for current user"""
+    try:
+        # If this is set as primary, unset other primary addresses
+        if address_data.is_primary:
+            await db.addresses.update_many(
+                {"user_id": user['id']},
+                {"$set": {"is_primary": False}}
+            )
+        
+        # If this is the first address, make it primary
+        existing_count = await db.addresses.count_documents({"user_id": user['id']})
+        if existing_count == 0:
+            address_data.is_primary = True
+        
+        address = Address(user_id=user['id'], **address_data.model_dump())
+        doc = address.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.addresses.insert_one(doc)
+        logger.info(f"Address created for user {user['id']}")
+        return address
+        
+    except Exception as e:
+        logger.error(f"Error creating address: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create address: {str(e)}")
+
+@api_router.put("/user/addresses/{address_id}")
+async def update_user_address(address_id: str, update_data: AddressUpdate, user: dict = Depends(get_current_user)):
+    """Update an address"""
+    # Verify address belongs to user
+    address = await db.addresses.find_one({"id": address_id, "user_id": user['id']})
+    if not address:
+        raise HTTPException(status_code=404, detail="Address not found")
+    
+    update_dict = {k: v for k, v in update_data.model_dump().items() if v is not None}
+    
+    if not update_dict:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    
+    # If setting as primary, unset other primary addresses
+    if update_dict.get('is_primary'):
+        await db.addresses.update_many(
+            {"user_id": user['id'], "id": {"$ne": address_id}},
+            {"$set": {"is_primary": False}}
+        )
+    
+    await db.addresses.update_one({"id": address_id}, {"$set": update_dict})
+    
+    updated = await db.addresses.find_one({"id": address_id}, {"_id": 0})
+    return updated
+
+@api_router.delete("/user/addresses/{address_id}")
+async def delete_user_address(address_id: str, user: dict = Depends(get_current_user)):
+    """Delete an address"""
+    address = await db.addresses.find_one({"id": address_id, "user_id": user['id']})
+    if not address:
+        raise HTTPException(status_code=404, detail="Address not found")
+    
+    was_primary = address.get('is_primary', False)
+    
+    await db.addresses.delete_one({"id": address_id})
+    
+    # If deleted address was primary, set another as primary
+    if was_primary:
+        remaining = await db.addresses.find_one({"user_id": user['id']})
+        if remaining:
+            await db.addresses.update_one(
+                {"id": remaining['id']},
+                {"$set": {"is_primary": True}}
+            )
+    
+    return {"message": "Address deleted successfully"}
+
+@api_router.put("/user/addresses/{address_id}/primary")
+async def set_primary_address(address_id: str, user: dict = Depends(get_current_user)):
+    """Set an address as primary"""
+    address = await db.addresses.find_one({"id": address_id, "user_id": user['id']})
+    if not address:
+        raise HTTPException(status_code=404, detail="Address not found")
+    
+    # Unset all other primary addresses
+    await db.addresses.update_many(
+        {"user_id": user['id']},
+        {"$set": {"is_primary": False}}
+    )
+    
+    # Set this address as primary
+    await db.addresses.update_one(
+        {"id": address_id},
+        {"$set": {"is_primary": True}}
+    )
+    
+    return {"message": "Primary address updated successfully"}
+
+# ==================== USER ORDERS ROUTES ====================
+
+@api_router.get("/user/orders")
+async def get_user_orders(user: dict = Depends(get_current_user)):
+    """Get all orders for current user"""
+    orders = await db.orders.find(
+        {"user_id": user['id']}, 
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    for order in orders:
+        if isinstance(order.get('created_at'), str):
+            order['created_at'] = datetime.fromisoformat(order['created_at'])
+    
+    return orders
+
+@api_router.get("/user/orders/{order_id}")
+async def get_user_order_details(order_id: str, user: dict = Depends(get_current_user)):
+    """Get specific order details for current user"""
+    order = await db.orders.find_one(
+        {"order_id": order_id, "user_id": user['id']}, 
+        {"_id": 0}
+    )
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if isinstance(order.get('created_at'), str):
+        order['created_at'] = datetime.fromisoformat(order['created_at'])
+    
+    return order
+
+@api_router.post("/user/orders/{order_id}/cancel")
+async def cancel_user_order(order_id: str, user: dict = Depends(get_current_user)):
+    """Cancel an order (only if not delivered)"""
+    order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Check if order can be cancelled
+    non_cancellable_statuses = ['delivered', 'cancelled']
+    if order.get('order_status') in non_cancellable_statuses:
+        raise HTTPException(status_code=400, detail="This order cannot be cancelled")
+    
+    # Update order status to cancelled
+    now = datetime.now(timezone.utc)
+    tracking_events = order.get('tracking_events', [])
+    tracking_events.append({
+        "status": "cancelled",
+        "description": "Order cancelled by customer",
+        "timestamp": now.isoformat(),
+        "location": None
+    })
+    
+    await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": {
+            "order_status": "cancelled",
+            "tracking_events": tracking_events
+        }}
+    )
+    
+    # Restore stock for cancelled items
+    for item in order.get('items', []):
+        await db.products.update_one(
+            {"id": item['id']},
+            {"$inc": {"stock": item['quantity']}}
+        )
+    
+    logger.info(f"Order {order_id} cancelled by user {user['id']}")
+    return {"message": "Order cancelled successfully"}
+
+@api_router.post("/user/orders/{order_id}/refund")
+async def request_refund(order_id: str, user: dict = Depends(get_current_user)):
+    """Request refund for a delivered order (within 7 days)"""
+    order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.get('order_status') != 'delivered':
+        raise HTTPException(status_code=400, detail="Refund can only be requested for delivered orders")
+    
+    # Check if within 7 days of delivery
+    delivered_at = None
+    for event in order.get('tracking_events', []):
+        if event.get('status') == 'delivered' and event.get('timestamp'):
+            delivered_at = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00')) if isinstance(event['timestamp'], str) else event['timestamp']
+            break
+    
+    if not delivered_at:
+        # Use created_at as fallback
+        delivered_at = order.get('created_at')
+        if isinstance(delivered_at, str):
+            delivered_at = datetime.fromisoformat(delivered_at)
+    
+    days_since_delivery = (datetime.now(timezone.utc) - delivered_at).days
+    if days_since_delivery > 7:
+        raise HTTPException(status_code=400, detail="Refund request period has expired (7 days)")
+    
+    # Check if already requested
+    if order.get('refund_status'):
+        raise HTTPException(status_code=400, detail="Refund has already been requested for this order")
+    
+    # Update order with refund request
+    now = datetime.now(timezone.utc)
+    await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": {
+            "refund_status": "requested",
+            "refund_requested_at": now.isoformat(),
+            "order_status": "refund_requested"
+        }}
+    )
+    
+    logger.info(f"Refund requested for order {order_id} by user {user['id']}")
+    return {"message": "Refund request submitted successfully. We will process it within 3-5 business days."}
+
+@api_router.post("/user/orders/{order_id}/replace")
+async def request_replacement(order_id: str, user: dict = Depends(get_current_user)):
+    """Request replacement for a delivered order (within 7 days)"""
+    order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.get('order_status') != 'delivered':
+        raise HTTPException(status_code=400, detail="Replacement can only be requested for delivered orders")
+    
+    # Check if within 7 days of delivery
+    delivered_at = None
+    for event in order.get('tracking_events', []):
+        if event.get('status') == 'delivered' and event.get('timestamp'):
+            delivered_at = datetime.fromisoformat(event['timestamp'].replace('Z', '+00:00')) if isinstance(event['timestamp'], str) else event['timestamp']
+            break
+    
+    if not delivered_at:
+        delivered_at = order.get('created_at')
+        if isinstance(delivered_at, str):
+            delivered_at = datetime.fromisoformat(delivered_at)
+    
+    days_since_delivery = (datetime.now(timezone.utc) - delivered_at).days
+    if days_since_delivery > 7:
+        raise HTTPException(status_code=400, detail="Replacement request period has expired (7 days)")
+    
+    # Check if already requested
+    if order.get('replacement_status'):
+        raise HTTPException(status_code=400, detail="Replacement has already been requested for this order")
+    
+    # Update order with replacement request
+    now = datetime.now(timezone.utc)
+    await db.orders.update_one(
+        {"order_id": order_id},
+        {"$set": {
+            "replacement_status": "requested",
+            "replacement_requested_at": now.isoformat(),
+            "order_status": "replacement_requested"
+        }}
+    )
+    
+    logger.info(f"Replacement requested for order {order_id} by user {user['id']}")
+    return {"message": "Replacement request submitted successfully. We will contact you shortly."}
+
+@api_router.get("/user/orders/{order_id}/track")
+async def track_user_order(order_id: str, user: dict = Depends(get_current_user)):
+    """Get tracking information for an order"""
+    order = await db.orders.find_one(
+        {"order_id": order_id, "user_id": user['id']}, 
+        {"_id": 0}
+    )
+    
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Generate tracking events based on order status
+    tracking_events = order.get('tracking_events', [])
+    
+    # If no tracking events, generate default ones based on status
+    if not tracking_events:
+        status = order.get('order_status', 'pending')
+        created_at = order.get('created_at')
+        if isinstance(created_at, str):
+            created_at = datetime.fromisoformat(created_at)
+        
+        tracking_events = [
+            {
+                "status": "pending",
+                "description": "Order placed successfully",
+                "timestamp": created_at.isoformat() if created_at else datetime.now(timezone.utc).isoformat(),
+                "completed": True
+            }
+        ]
+        
+        status_flow = ["confirmed", "processing", "shipped", "out_for_delivery", "delivered"]
+        status_descriptions = {
+            "confirmed": "Order confirmed by seller",
+            "processing": "Order is being processed",
+            "shipped": "Order has been shipped",
+            "out_for_delivery": "Order is out for delivery",
+            "delivered": "Order delivered successfully"
+        }
+        
+        current_status_index = status_flow.index(status) if status in status_flow else -1
+        
+        for i, s in enumerate(status_flow):
+            tracking_events.append({
+                "status": s,
+                "description": status_descriptions[s],
+                "timestamp": None,
+                "completed": i <= current_status_index
+            })
+    
+    return {
+        "order_id": order['order_id'],
+        "order_status": order.get('order_status', 'pending'),
+        "payment_status": order.get('payment_status', 'pending'),
+        "estimated_delivery": order.get('estimated_delivery'),
+        "tracking_events": tracking_events,
+        "customer_info": order.get('customer_info'),
+        "items": order.get('items', []),
+        "total": order.get('total', 0)
+    }
+
+# ==================== REVIEW ROUTES ====================
+
+@api_router.post("/reviews", response_model=Review)
+async def create_review(review_data: ReviewCreate, user: dict = Depends(get_current_user)):
+    """Create a product review"""
+    try:
+        # Verify the order exists and belongs to user
+        order = await db.orders.find_one({"order_id": review_data.order_id, "user_id": user['id']})
+        if not order:
+            raise HTTPException(status_code=404, detail="Order not found")
+        
+        # Verify order is delivered
+        if order.get('order_status') != 'delivered':
+            raise HTTPException(status_code=400, detail="Can only review delivered orders")
+        
+        # Verify product was in the order
+        product_in_order = any(item['id'] == review_data.product_id for item in order.get('items', []))
+        if not product_in_order:
+            raise HTTPException(status_code=400, detail="Product not found in this order")
+        
+        # Check if user already reviewed this product for this order
+        existing_review = await db.reviews.find_one({
+            "product_id": review_data.product_id,
+            "user_id": user['id'],
+            "order_id": review_data.order_id
+        })
+        if existing_review:
+            raise HTTPException(status_code=400, detail="You have already reviewed this product for this order")
+        
+        # Validate rating
+        if review_data.rating < 1 or review_data.rating > 5:
+            raise HTTPException(status_code=400, detail="Rating must be between 1 and 5")
+        
+        review = Review(
+            product_id=review_data.product_id,
+            user_id=user['id'],
+            user_name=user['name'],
+            order_id=review_data.order_id,
+            rating=review_data.rating,
+            review_text=review_data.review_text
+        )
+        
+        doc = review.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        await db.reviews.insert_one(doc)
+        logger.info(f"Review created for product {review_data.product_id} by user {user['id']}")
+        return review
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating review: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create review: {str(e)}")
+
+@api_router.get("/products/{product_id}/reviews")
+async def get_product_reviews(product_id: str, limit: int = 10, skip: int = 0):
+    """Get reviews for a product"""
+    reviews = await db.reviews.find(
+        {"product_id": product_id},
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    total = await db.reviews.count_documents({"product_id": product_id})
+    
+    for review in reviews:
+        if isinstance(review.get('created_at'), str):
+            review['created_at'] = datetime.fromisoformat(review['created_at'])
+    
+    return {"reviews": reviews, "total": total}
+
+@api_router.get("/products/{product_id}/rating")
+async def get_product_rating(product_id: str):
+    """Get average rating and distribution for a product"""
+    reviews = await db.reviews.find({"product_id": product_id}, {"rating": 1}).to_list(1000)
+    
+    if not reviews:
+        return {
+            "product_id": product_id,
+            "average_rating": 0,
+            "total_reviews": 0,
+            "rating_distribution": {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
+        }
+    
+    total = len(reviews)
+    sum_ratings = sum(r['rating'] for r in reviews)
+    average = round(sum_ratings / total, 1)
+    
+    distribution = {"5": 0, "4": 0, "3": 0, "2": 0, "1": 0}
+    for r in reviews:
+        distribution[str(r['rating'])] += 1
+    
+    return {
+        "product_id": product_id,
+        "average_rating": average,
+        "total_reviews": total,
+        "rating_distribution": distribution
+    }
+
+@api_router.get("/user/reviews")
+async def get_user_reviews(user: dict = Depends(get_current_user)):
+    """Get all reviews by current user"""
+    reviews = await db.reviews.find({"user_id": user['id']}, {"_id": 0}).to_list(100)
+    for review in reviews:
+        if isinstance(review.get('created_at'), str):
+            review['created_at'] = datetime.fromisoformat(review['created_at'])
+    return reviews
+
+@api_router.get("/user/orders/{order_id}/reviewable-products")
+async def get_reviewable_products(order_id: str, user: dict = Depends(get_current_user)):
+    """Get products from an order that can be reviewed"""
+    order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    if order.get('order_status') != 'delivered':
+        return {"products": [], "message": "Order not yet delivered"}
+    
+    # Get existing reviews for this order
+    existing_reviews = await db.reviews.find({
+        "order_id": order_id,
+        "user_id": user['id']
+    }).to_list(100)
+    
+    reviewed_product_ids = {r['product_id'] for r in existing_reviews}
+    
+    # Filter products that haven't been reviewed
+    reviewable = []
+    for item in order.get('items', []):
+        reviewable.append({
+            **item,
+            "reviewed": item['id'] in reviewed_product_ids
+        })
+    
+    return {"products": reviewable}
 
 # ==================== CATEGORY ROUTES (PUBLIC) ====================
 
@@ -563,12 +1347,44 @@ async def get_product_by_id(product_id: str):
 async def create_order(order_input: OrderCreate):
     """Create a new order"""
     try:
+        # Check stock availability for all items
+        for item in order_input.items:
+            product = await db.products.find_one({"id": item.id, "is_active": True})
+            if not product:
+                raise HTTPException(status_code=400, detail=f"Product {item.name} not found")
+            if product.get('stock', 0) < item.quantity:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Insufficient stock for {item.name}. Available: {product.get('stock', 0)}"
+                )
+        
+        # Reduce stock for each item
+        for item in order_input.items:
+            await db.products.update_one(
+                {"id": item.id},
+                {"$inc": {"stock": -item.quantity}}
+            )
+            logger.info(f"Stock reduced for product {item.id} by {item.quantity}")
+        
         order_obj = Order(**order_input.model_dump())
         
         if order_obj.payment_method == "COD":
             order_obj.payment_status = "pending"
         elif order_obj.payment_method == "RAZORPAY" and order_obj.razorpay_payment_id:
             order_obj.payment_status = "paid"
+        
+        # Add initial tracking event
+        now = datetime.now(timezone.utc)
+        order_obj.tracking_events = [{
+            "status": "pending",
+            "description": "Order placed successfully",
+            "timestamp": now.isoformat(),
+            "location": None
+        }]
+        
+        # Set estimated delivery (5-7 days from now)
+        estimated = now + timedelta(days=5)
+        order_obj.estimated_delivery = estimated.strftime("%B %d, %Y")
         
         doc = order_obj.model_dump()
         doc['created_at'] = doc['created_at'].isoformat()
@@ -577,6 +1393,8 @@ async def create_order(order_input: OrderCreate):
         logger.info(f"Order created successfully: {order_obj.order_id}")
         return order_obj
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error creating order: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create order: {str(e)}")
@@ -683,13 +1501,13 @@ async def admin_login(login_data: AdminLogin):
     admin = await db.admins.find_one({"email": login_data.email}, {"_id": 0})
     
     if not admin:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=404, detail="Admin email not found. Please check your email.")
     
     if not verify_password(login_data.password, admin['password_hash']):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
+        raise HTTPException(status_code=401, detail="Incorrect password. Please try again.")
     
     if not admin.get('is_active', True):
-        raise HTTPException(status_code=401, detail="Account is disabled")
+        raise HTTPException(status_code=401, detail="Your account has been disabled. Please contact support.")
     
     access_token = create_access_token({"sub": admin['id'], "email": admin['email'], "role": admin['role']})
     
@@ -720,8 +1538,11 @@ async def get_dashboard_stats(admin: dict = Depends(get_current_admin)):
     """Get dashboard statistics"""
     total_orders = await db.orders.count_documents({})
     
-    # Calculate total revenue
-    pipeline = [{"$group": {"_id": None, "total": {"$sum": "$total"}}}]
+    # Calculate total revenue only from paid orders
+    pipeline = [
+        {"$match": {"payment_status": "paid"}},
+        {"$group": {"_id": None, "total": {"$sum": "$total"}}}
+    ]
     revenue_result = await db.orders.aggregate(pipeline).to_list(1)
     total_revenue = revenue_result[0]['total'] if revenue_result else 0
     
@@ -836,12 +1657,13 @@ async def admin_update_product(product_id: str, update_data: ProductUpdate, admi
 
 @api_router.delete("/admin/products/{product_id}")
 async def admin_delete_product(product_id: str, admin: dict = Depends(get_current_admin)):
-    """Delete (deactivate) a product"""
-    result = await db.products.update_one({"id": product_id}, {"$set": {"is_active": False}})
+    """Permanently delete a product from database"""
+    result = await db.products.delete_one({"id": product_id})
     
-    if result.matched_count == 0:
+    if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Product not found")
     
+    logger.info(f"Product {product_id} permanently deleted")
     return {"message": "Product deleted successfully"}
 
 # ==================== ADMIN ORDER ROUTES ====================
@@ -875,10 +1697,34 @@ async def admin_update_order_status(order_id: str, update_data: OrderStatusUpdat
     if not update_dict:
         raise HTTPException(status_code=400, detail="No fields to update")
     
-    result = await db.orders.update_one({"order_id": order_id}, {"$set": update_dict})
-    
-    if result.matched_count == 0:
+    # Get current order to update tracking events
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Add tracking event if order_status is being updated
+    if 'order_status' in update_dict:
+        new_status = update_dict['order_status']
+        status_descriptions = {
+            "pending": "Order placed successfully",
+            "confirmed": "Order confirmed by seller",
+            "processing": "Order is being processed",
+            "shipped": "Order has been shipped",
+            "out_for_delivery": "Order is out for delivery",
+            "delivered": "Order delivered successfully",
+            "cancelled": "Order has been cancelled"
+        }
+        
+        tracking_events = order.get('tracking_events', [])
+        tracking_events.append({
+            "status": new_status,
+            "description": status_descriptions.get(new_status, f"Order status updated to {new_status}"),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "location": None
+        })
+        update_dict['tracking_events'] = tracking_events
+    
+    result = await db.orders.update_one({"order_id": order_id}, {"$set": update_dict})
     
     updated = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     logger.info(f"Order {order_id} updated: {update_dict}")
@@ -1123,9 +1969,7 @@ async def startup_event():
     except Exception as e:
         logger.error(f"Error creating default admin: {str(e)}")
 
-# Include the router in the main app
-app.include_router(api_router)
-
+# Add CORS middleware BEFORE including routes
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
@@ -1133,6 +1977,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include the router in the main app
+app.include_router(api_router)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

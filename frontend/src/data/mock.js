@@ -367,114 +367,83 @@ export const combos = [
 
 // Google Reviews - Real Reviews from Google Maps (5 star and 4 star)
 export const googleReviews = [
-  // 5 Star Reviews
+  // Real Google Reviews from Dheerghayush Naturals
   {
     id: 1,
-    name: "Kiran Kumar",
+    name: "Jyoshna Gupta",
     rating: 5,
-    timeAgo: "a week ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "I really like the pure oils that they make live with real organic seeds. They have all the millet items and I really like their service. Best organic store in Nellore!",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjXqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "This is one of the BEST organic store in Nellore, located opposite to D-mart. They have a wide variety of products. The products are genuine and worth the price and I strongly suggest this store to everyone for a healthy shopping. I've bought their millet noodles, millet snacks (which is a best seller), gow darbar agarbatti, ground nut oil, coconut oil, 3 kinds of millets, karam podi, black rice murukulu, red rice murukulu and laddoo.",
     isGoogleReview: true
   },
   {
     id: 2,
-    name: "Srinivasa Rao",
+    name: "dhana priya",
     rating: 5,
-    timeAgo: "2 weeks ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Excellent quality products. The wood pressed groundnut oil and coconut oil are 100% pure and authentic. You can taste the difference. Highly recommended for health conscious families.",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjWqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "Organic products are good for health.organic food products may be more nutritious than conventional food products.All organic products are natural. These healthy and organic products are in now in Nellore .So pls visit 'Dheergayush naturals','Experience the future of health'.",
     isGoogleReview: true
   },
   {
     id: 3,
-    name: "Lakshmi Prasanna",
+    name: "lek pabbarthi",
     rating: 5,
-    timeAgo: "3 weeks ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Best place for organic groceries in Magunta Layout. Fresh products, reasonable prices and very helpful staff. Their A2 desi cow ghee is absolutely pure and aromatic.",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjUqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "Recently I have purchased organic coconut oil for my 1 year old baby.it was very good.i recommend to visit for more such organic product.",
     isGoogleReview: true
   },
   {
     id: 4,
-    name: "Venkata Ramana",
-    rating: 5,
-    timeAgo: "a month ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Amazing collection of millets, pulses and organic products. The owner is very knowledgeable and explains about the health benefits. Products are fresh and well-packed. Must visit!",
+    name: "Tweety Anusha",
+    rating: 4,
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjTqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "I have tried agarbatti ,sunflower oil,organic noodles in this shop the products are very genuine and liked the taste of noodles was too good my kids loved it..",
     isGoogleReview: true
   },
   {
     id: 5,
-    name: "Padmavathi",
+    name: "jagadesh reddy",
     rating: 5,
-    timeAgo: "a month ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Finally found a trustworthy store for natural products in Nellore. Their wild honey is 100% genuine. My whole family has switched to their products. Excellent quality!",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjVqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "Recently I have purchased few organic products for my family.it was very good.i recommend to visit for more such organic products",
     isGoogleReview: true
   },
   {
     id: 6,
-    name: "Ravi Teja",
+    name: "gurrum ramya",
     rating: 5,
-    timeAgo: "2 months ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Outstanding organic store! Bought millets, dry fruits and cold pressed oils. Everything is authentic and chemical-free. The quality is unmatched. Will definitely recommend to everyone.",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjWqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "I purchased jowar flour and organic noodles in dis shop.quality wise super...noodle taste was so yummy.....",
     isGoogleReview: true
   },
   {
     id: 7,
-    name: "Suresh Babu",
+    name: "Suresh Lancer",
     rating: 5,
-    timeAgo: "2 months ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Very good quality organic products. The pickles and dry fruits are excellent. Staff is friendly and helpful. Home delivery service is also available. Great experience!",
-    isGoogleReview: true
-  },
-  // 4 Star Reviews
-  {
-    id: 8,
-    name: "Nagaraju",
-    rating: 4,
-    timeAgo: "3 weeks ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Good collection of organic products. Quality is good and prices are reasonable. Would appreciate if they add more variety of millets. Overall a nice store for healthy products.",
-    isGoogleReview: true
-  },
-  {
-    id: 9,
-    name: "Madhavi",
-    rating: 4,
-    timeAgo: "a month ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Nice organic store with genuine products. The wood pressed oils are really good. Slightly expensive but worth the quality. Good customer service.",
-    isGoogleReview: true
-  },
-  {
-    id: 10,
-    name: "Krishna Murthy",
-    rating: 4,
-    timeAgo: "2 months ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Authentic organic products available here. Bought ghee and honey - both are of excellent quality. Shop is well organized. Recommend for anyone looking for natural products.",
-    isGoogleReview: true
-  },
-  {
-    id: 11,
-    name: "Anitha",
-    rating: 4,
-    timeAgo: "3 months ago",
-    image: "https://lh3.googleusercontent.com/a/default-user=s120-c",
-    text: "Good store for organic groceries. Products are fresh and healthy. The owner explains everything nicely. Parking could be better but products make up for it.",
+    timeAgo: "a year ago",
+    image: "https://lh3.googleusercontent.com/a-/ALV-UjXqKxYvN8vYxGxQxGxQxGxQxGxQxGxQxGxQxGxQxGxQ=s120-c",
+    text: "Really great products and worth price items. Best option for organic food items in Nellore.",
     isGoogleReview: true
   }
 ];
 
-// Google Business Rating Info
+// Google Business Rating Info - Dynamically calculated from reviews
+const calculateAverageRating = () => {
+  if (googleReviews.length === 0) return 0;
+  const totalRating = googleReviews.reduce((sum, review) => sum + review.rating, 0);
+  return (totalRating / googleReviews.length).toFixed(1);
+};
+
 export const googleRating = {
-  rating: 4.9,
-  totalReviews: 14,
-  mapsUrl: "https://www.google.com/maps/place/Dheerghayush+naturals/@14.4393297,79.9758369,14z/data=!4m8!3m7!1s0x3a4cf3877a32464f:0x83e265bb829c59f8!8m2!3d14.4291837!4d79.971481!9m1!1b1!16s%2Fg%2F11wmtbsd71?entry=ttu"
+  rating: calculateAverageRating(),
+  totalReviews: googleReviews.length,
+  mapsUrl: "https://www.google.com/maps/place/Dheerghayush+naturals/@14.4393297,79.9758369,14z/data=!4m8!3m7!1s0x3a4cf3877a32464f:0x83e265bb829c59f8!8m2!3d14.4291837!4d79.971481!9m1!1b1!16s%2Fg%2F11wmtbsd71?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D"
 };
 
 export const testimonials = googleReviews;

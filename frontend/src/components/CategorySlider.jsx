@@ -1,11 +1,32 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { categories } from '../data/mock';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CategorySlider = () => {
   const sliderRef = useRef(null);
   const navigate = useNavigate();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const scroll = (direction) => {
     if (sliderRef.current) {
@@ -17,6 +38,10 @@ const CategorySlider = () => {
   const handleCategoryClick = (slug) => {
     navigate(`/products?category=${slug}`);
   };
+
+  if (loading || categories.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-6 bg-gray-50">

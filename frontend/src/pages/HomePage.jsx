@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import HeroSection from '../components/HeroSection';
 import CategorySlider from '../components/CategorySlider';
@@ -7,11 +7,43 @@ import HealthBenefits from '../components/HealthBenefits';
 import Testimonials from '../components/Testimonials';
 import FeatureStrip from '../components/FeatureStrip';
 import CertificationBadges from '../components/CertificationBadges';
-import { products } from '../data/mock';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const HomePage = ({ onAddToCart }) => {
-  const bestsellers = products.filter(p => p.isBestseller);
-  const newArrivals = products.slice(-6);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const bestsellers = products.filter(p => p.is_bestseller);
+  const newArrivals = products.slice(-6).reverse();
+
+  if (loading) {
+    return (
+      <main>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main>
@@ -28,21 +60,25 @@ const HomePage = ({ onAddToCart }) => {
         <CertificationBadges />
       </section>
       
-      <ProductSection 
-        id="bestsellers"
-        title="Best Sellers" 
-        products={bestsellers} 
-        onAddToCart={onAddToCart} 
-      />
+      {bestsellers.length > 0 && (
+        <ProductSection 
+          id="bestsellers"
+          title="Best Sellers" 
+          products={bestsellers} 
+          onAddToCart={onAddToCart} 
+        />
+      )}
       
       <HealthBenefits />
       
-      <ProductSection 
-        id="newarrivals"
-        title="New Arrivals" 
-        products={newArrivals} 
-        onAddToCart={onAddToCart} 
-      />
+      {newArrivals.length > 0 && (
+        <ProductSection 
+          id="newarrivals"
+          title="New Arrivals" 
+          products={newArrivals} 
+          onAddToCart={onAddToCart} 
+        />
+      )}
       
       {/* CTA Section */}
       <section className="py-12 bg-gradient-to-r from-[#4CAF50] to-[#8BC34A]">

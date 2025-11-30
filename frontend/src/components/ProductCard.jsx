@@ -1,33 +1,85 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Plus, Minus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ShoppingCart, Plus, Minus, AlertTriangle, Star } from 'lucide-react';
 
-const ProductCard = ({ product, onAddToCart }) => {
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
+  const navigate = useNavigate();
   const [quantity, setQuantity] = useState(1);
-  const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+  const [rating, setRating] = useState({ average_rating: 0, total_reviews: 0 });
+  const originalPrice = product.original_price || product.originalPrice;
+  const discount = Math.round(((originalPrice - product.price) / originalPrice) * 100);
+  const stock = product.stock ?? 100;
+  const isOutOfStock = stock <= 0;
+  const isLowStock = stock > 0 && stock <= 10;
+
+  useEffect(() => {
+    fetchRating();
+  }, [product.id]);
+
+  const fetchRating = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/products/${product.id}/rating`);
+      if (response.ok) {
+        const data = await response.json();
+        setRating(data);
+      }
+    } catch (error) {
+      // Silently fail - rating is optional
+    }
+  };
 
   const handleAddToCart = () => {
-    onAddToCart({ ...product, quantity });
+    if (isOutOfStock) return;
+    onAddToCart({ ...product, quantity: Math.min(quantity, stock) });
     setQuantity(1);
   };
 
+  const handleCardClick = (e) => {
+    if (e.target.closest('button')) return;
+    navigate(`/product/${product.id}`);
+  };
+
+  const handleIncreaseQuantity = () => {
+    if (quantity < stock) {
+      setQuantity(quantity + 1);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg sm:rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group">
+    <div 
+      className="bg-white rounded-lg sm:rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer"
+      onClick={handleCardClick}
+    >
       <div className="relative">
-        <div className="aspect-square overflow-hidden bg-gray-50">
+        <div className={`aspect-square overflow-hidden bg-gray-50 ${isOutOfStock ? 'opacity-50' : ''}`}>
           <img 
             src={product.image} 
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           />
         </div>
-        {discount > 0 && (
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <span className="bg-red-600 text-white text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg">
+              Out of Stock
+            </span>
+          </div>
+        )}
+        {discount > 0 && !isOutOfStock && (
           <span className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-red-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
             {discount}% OFF
           </span>
         )}
-        {product.isBestseller && (
+        {(product.is_bestseller || product.isBestseller) && !isOutOfStock && (
           <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#4CAF50] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
             Bestseller
+          </span>
+        )}
+        {isNewArrival && !isOutOfStock && !(product.is_bestseller || product.isBestseller) && (
+          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-blue-500 text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            New Arrival
           </span>
         )}
       </div>
@@ -36,41 +88,74 @@ const ProductCard = ({ product, onAddToCart }) => {
         <h3 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base mb-1 line-clamp-2 min-h-[32px] sm:min-h-[48px] group-hover:text-[#4CAF50] transition-colors">
           {product.name}
         </h3>
-        <p className="text-[10px] sm:text-sm text-gray-500 mb-2 sm:mb-3">{product.weight}</p>
+        <p className="text-[10px] sm:text-sm text-gray-500 mb-1">{product.weight}</p>
         
-        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-4">
+        {/* Rating */}
+        {rating.total_reviews > 0 && (
+          <div className="flex items-center gap-1 mb-1">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star 
+                  key={i} 
+                  size={10} 
+                  className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
+                />
+              ))}
+            </div>
+            <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
+          </div>
+        )}
+        
+        {/* Low Stock Warning */}
+        {isLowStock && (
+          <div className="flex items-center gap-1 text-red-500 mb-1">
+            <AlertTriangle size={12} />
+            <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
+          </div>
+        )}
+        
+        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-3">
           <span className="text-sm sm:text-lg font-bold text-gray-800">₹{product.price.toFixed(2)}</span>
-          {product.originalPrice > product.price && (
-            <span className="text-[10px] sm:text-sm text-gray-400 line-through">₹{product.originalPrice}</span>
+          {originalPrice > product.price && (
+            <span className="text-[10px] sm:text-sm text-gray-400 line-through">₹{originalPrice}</span>
           )}
         </div>
         
-        {/* Mobile: Compact layout */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-          <div className="flex items-center justify-center border border-gray-200 rounded-lg">
+        {isOutOfStock ? (
+          <button 
+            disabled
+            className="w-full flex items-center justify-center gap-1 sm:gap-2 bg-gray-300 text-gray-500 py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium cursor-not-allowed text-xs sm:text-sm"
+          >
+            <span>Out of Stock</span>
+          </button>
+        ) : (
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="flex items-center justify-center border border-gray-200 rounded-lg">
+              <button 
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="p-1.5 sm:p-2 hover:bg-gray-50 transition-colors"
+              >
+                <Minus size={12} className="sm:w-[14px] sm:h-[14px]" />
+              </button>
+              <span className="px-2 sm:px-3 text-xs sm:text-sm font-medium">{quantity}</span>
+              <button 
+                onClick={handleIncreaseQuantity}
+                disabled={quantity >= stock}
+                className={`p-1.5 sm:p-2 transition-colors ${quantity >= stock ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
+              >
+                <Plus size={12} className="sm:w-[14px] sm:h-[14px]" />
+              </button>
+            </div>
+            
             <button 
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="p-1.5 sm:p-2 hover:bg-gray-50 transition-colors"
+              onClick={handleAddToCart}
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm"
             >
-              <Minus size={12} className="sm:w-[14px] sm:h-[14px]" />
-            </button>
-            <span className="px-2 sm:px-3 text-xs sm:text-sm font-medium">{quantity}</span>
-            <button 
-              onClick={() => setQuantity(quantity + 1)}
-              className="p-1.5 sm:p-2 hover:bg-gray-50 transition-colors"
-            >
-              <Plus size={12} className="sm:w-[14px] sm:h-[14px]" />
+              <span>Add</span>
+              <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
             </button>
           </div>
-          
-          <button 
-            onClick={handleAddToCart}
-            className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm"
-          >
-            <span>Add</span>
-            <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );

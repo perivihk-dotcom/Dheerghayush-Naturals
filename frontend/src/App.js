@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import "./App.css";
+import ScrollToTop from './components/ScrollToTop';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
@@ -10,9 +11,13 @@ import HomePage from './pages/HomePage';
 import ProductsPage from './pages/ProductsPage';
 import OurStoryPage from './pages/OurStoryPage';
 import ContactPage from './pages/ContactPage';
-import CombosPage from './pages/CombosPage';
+
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
+import ProductDetailsPage from './pages/ProductDetailsPage';
+import ProfilePage from './pages/ProfilePage';
+import OrderDetailsPage from './pages/OrderDetailsPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { AdminProvider, useAdmin } from './context/AdminContext';
@@ -81,6 +86,7 @@ function App() {
     <AdminProvider>
       <UserProvider>
         <Router>
+          <ScrollToTop />
           <Routes>
             {/* Admin Routes */}
             <Route path="/admin/login" element={<AdminLogin />} />
@@ -107,11 +113,15 @@ function App() {
                   <Routes>
                     <Route path="/" element={<HomePage onAddToCart={addToCart} />} />
                     <Route path="/products" element={<ProductsPage onAddToCart={addToCart} />} />
+                    <Route path="/product/:productId" element={<ProductDetailsPage onAddToCart={addToCart} />} />
                     <Route path="/our-story" element={<OurStoryPage />} />
                     <Route path="/contact" element={<ContactPage />} />
-                    <Route path="/combos" element={<CombosPage onAddToCart={addToCart} />} />
-                    <Route path="/checkout" element={<CheckoutPage clearCart={clearCart} />} />
+
+                    <Route path="/checkout" element={<CheckoutPage clearCart={clearCart} cartItems={cartItems} />} />
                     <Route path="/order-confirmation/:orderId" element={<OrderConfirmationPage />} />
+                    <Route path="/profile" element={<ProfilePage />} />
+                    <Route path="/profile/orders/:orderId" element={<OrderDetailsPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
                   </Routes>
                   
                   <Footer />

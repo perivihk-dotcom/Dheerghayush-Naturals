@@ -2,17 +2,41 @@ import React, { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Quote, Star, ExternalLink } from 'lucide-react';
 import { testimonials, googleRating } from '../data/mock';
 
-// Star Rating Component
-const StarRating = ({ rating, size = 16 }) => {
+// Star Rating Component with half-star support
+const StarRating = ({ rating, size = 16, showHalf = false }) => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = showHalf && (rating % 1 >= 0.5);
+  
   return (
     <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <Star
-          key={star}
-          size={size}
-          className={star <= rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}
-        />
-      ))}
+      {[1, 2, 3, 4, 5].map((star) => {
+        if (star <= fullStars) {
+          return (
+            <Star
+              key={star}
+              size={size}
+              className="text-yellow-400 fill-yellow-400"
+            />
+          );
+        } else if (star === fullStars + 1 && hasHalfStar) {
+          return (
+            <div key={star} className="relative" style={{ width: size, height: size }}>
+              <Star size={size} className="text-gray-300 absolute" />
+              <div className="overflow-hidden absolute" style={{ width: `${size / 2}px` }}>
+                <Star size={size} className="text-yellow-400 fill-yellow-400" />
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <Star
+              key={star}
+              size={size}
+              className="text-gray-300"
+            />
+          );
+        }
+      })}
     </div>
   );
 };
@@ -80,10 +104,7 @@ const Testimonials = () => {
             </svg>
             <div className="flex items-center gap-2">
               <span className="text-2xl font-bold text-gray-800">{googleRating.rating}</span>
-              <div className="flex flex-col items-start">
-                <StarRating rating={5} size={14} />
-                <span className="text-xs text-gray-500">{googleRating.totalReviews} Google reviews</span>
-              </div>
+              <StarRating rating={parseFloat(googleRating.rating)} size={18} showHalf={true} />
             </div>
             <ExternalLink size={14} className="text-gray-400" />
           </a>
@@ -167,18 +188,6 @@ const Testimonials = () => {
               }`}
             />
           ))}
-        </div>
-
-        {/* Review Summary */}
-        <div className="mt-8 flex justify-center gap-6 text-sm text-gray-600">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#4CAF50]"></div>
-            <span>{fiveStarReviews.length} Five Star Reviews</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span>{fourStarReviews.length} Four Star Reviews</span>
-          </div>
         </div>
 
         {/* View All Reviews Link */}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Tag, ShoppingBag, Grid, MessageCircle } from 'lucide-react';
+import { Home, ShoppingBag, Grid, MessageCircle } from 'lucide-react';
 
 const BottomNav = ({ setShowCart, cartItems }) => {
   const location = useLocation();
@@ -43,15 +43,7 @@ const BottomNav = ({ setShowCart, cartItems }) => {
           </div>
           <span className="text-xs">Cart</span>
         </button>
-        <Link 
-          to="/combos" 
-          className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            isActive('/combos') ? 'text-[#4CAF50]' : 'text-gray-500 hover:text-[#4CAF50]'
-          }`}
-        >
-          <Tag size={22} />
-          <span className="text-xs">Combos</span>
-        </Link>
+
         <a 
           href="https://wa.me/+917032254736" 
           target="_blank" 

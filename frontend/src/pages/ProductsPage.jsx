@@ -3,13 +3,22 @@ import { useSearchParams } from 'react-router-dom';
 import { Filter, Grid, List, X } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import ProductListCard from '../components/ProductListCard';
-import { products, categories } from '../data/mock';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ProductsPage = ({ onAddToCart }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || 'all');
   const [viewMode, setViewMode] = useState('grid');
   const [showFilters, setShowFilters] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, []);
 
   useEffect(() => {
     const category = searchParams.get('category');
@@ -18,9 +27,38 @@ const ProductsPage = ({ onAddToCart }) => {
     }
   }, [searchParams]);
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/categories`);
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/products`);
+      if (response.ok) {
+        const data = await response.json();
+        setProducts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredProducts = selectedCategory === 'all' 
     ? products 
     : products.filter(p => p.category === selectedCategory);
+
+  // Get IDs of latest 6 products (new arrivals)
+  const newArrivalIds = products.slice(-6).map(p => p.id);
 
   const handleCategoryChange = (slug) => {
     setSelectedCategory(slug);
@@ -37,6 +75,14 @@ const ProductsPage = ({ onAddToCart }) => {
     const category = categories.find(c => c.slug === slug);
     return category ? category.name : 'Products';
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-gray-50">
@@ -135,12 +181,14 @@ const ProductsPage = ({ onAddToCart }) => {
                     key={product.id} 
                     product={product} 
                     onAddToCart={onAddToCart}
+                    isNewArrival={newArrivalIds.includes(product.id)}
                   />
                 ) : (
                   <ProductListCard 
                     key={product.id} 
                     product={product} 
                     onAddToCart={onAddToCart}
+                    isNewArrival={newArrivalIds.includes(product.id)}
                   />
                 )
               ))}

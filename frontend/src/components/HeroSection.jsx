@@ -1,24 +1,60 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { heroSlides, businessInfo } from '../data/mock';
+import { businessInfo } from '../data/mock';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const HeroSection = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    fetchBanners();
   }, []);
 
+  useEffect(() => {
+    if (banners.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % banners.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [banners]);
+
+  const fetchBanners = async () => {
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/banners`);
+      if (response.ok) {
+        const data = await response.json();
+        setBanners(data);
+      }
+    } catch (error) {
+      console.error('Error fetching banners:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    setCurrentSlide((prev) => (prev + 1) % banners.length);
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + heroSlides.length) % heroSlides.length);
+    setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
   };
+
+  if (loading || banners.length === 0) {
+    return (
+      <section className="relative overflow-hidden h-[400px] md:h-[450px] bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] flex items-center justify-center">
+        <div className="text-white text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-2">Welcome to Dheerghayush Naturals</h2>
+          <p className="text-lg opacity-90">Pure & Natural Products from Farm to Table</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative overflow-hidden">
@@ -26,11 +62,11 @@ const HeroSection = () => {
         className="flex transition-transform duration-700 ease-in-out"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {heroSlides.map((slide) => (
+        {banners.map((slide) => (
           <div 
             key={slide.id}
             className="min-w-full h-[400px] md:h-[450px] relative"
-            style={{ backgroundColor: slide.bgColor }}
+            style={{ backgroundColor: slide.bg_color }}
           >
             <div className="max-w-7xl mx-auto px-4 h-full flex items-center">
               <div className="grid md:grid-cols-2 gap-8 items-center w-full">
@@ -39,9 +75,9 @@ const HeroSection = () => {
                   <h3 className="text-3xl md:text-4xl font-bold mb-4">{slide.subtitle}</h3>
                   <p className="text-lg opacity-90 mb-6 max-w-md">{slide.description}</p>
                   <div className="flex items-center gap-4">
-                    <button className="bg-white text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                    <Link to="/products" className="bg-white text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
                       Shop Now
-                    </button>
+                    </Link>
                     <img 
                       src={businessInfo.logo} 
                       alt={businessInfo.name}
@@ -86,7 +122,7 @@ const HeroSection = () => {
 
       {/* Dots Indicator */}
       <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-        {heroSlides.map((_, index) => (
+        {banners.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
