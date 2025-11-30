@@ -31,20 +31,7 @@ const CertificationBadges = ({ className = "" }) => {
               <img 
                 src={badge.src} 
                 alt={badge.alt}
-                className={`object-contain transform hover:scale-105 transition-transform duration-300 ${
-                  index === 3 
-                    ? 'w-40 h-40' 
-                    : index === 0
-                    ? 'h-40'
-                    : 'w-24 h-24 md:w-32 md:h-32 lg:w-36 lg:h-36'
-                }`}
-                style={
-                  index === 3 
-                    ? { width: '10rem', height: '10rem' } 
-                    : index === 0 
-                    ? { width: '9rem', height: '10rem' } 
-                    : {}
-                }
+                className="object-contain transform hover:scale-105 transition-transform duration-300 w-28 h-28 md:w-36 md:h-36 lg:w-40 lg:h-40"
               />
             </div>
           ))}
