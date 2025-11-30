@@ -229,7 +229,12 @@ const AdminOrders = () => {
             return (
               <button
                 key={step.id}
-                onClick={() => setActiveStep(step.id)}
+                onClick={() => {
+                  setActiveStep(step.id);
+                  if (step.id === 'replacement') {
+                    setActiveReplacementStep('all');
+                  }
+                }}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all whitespace-nowrap ${colorClasses[step.color]} ${isActive ? 'shadow-lg' : ''}`}
               >
                 <StepIcon className="w-4 h-4" />
@@ -244,6 +249,45 @@ const AdminOrders = () => {
           })}
         </div>
       </div>
+
+      {/* Replacement Sub-Steps */}
+      {activeStep === 'replacement' && (
+        <div className="bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl p-4 border border-pink-200">
+          <h3 className="text-sm font-semibold text-pink-800 mb-3">Replacement Status Filter</h3>
+          <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
+            {replacementSubSteps.map((subStep) => {
+              const count = subStep.id === 'all' 
+                ? allOrders.filter(order => replacementStatuses.includes(order.order_status)).length
+                : allOrders.filter(order => order.order_status === subStep.id).length;
+              const isActive = activeReplacementStep === subStep.id;
+              
+              const colorClasses = {
+                yellow: isActive ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100',
+                blue: isActive ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100',
+                green: isActive ? 'bg-green-500 text-white' : 'bg-green-50 text-green-700 hover:bg-green-100',
+                red: isActive ? 'bg-red-500 text-white' : 'bg-red-50 text-red-700 hover:bg-red-100',
+                pink: isActive ? 'bg-pink-500 text-white' : 'bg-pink-50 text-pink-700 hover:bg-pink-100',
+                cyan: isActive ? 'bg-cyan-500 text-white' : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100',
+              };
+              
+              return (
+                <button
+                  key={subStep.id}
+                  onClick={() => setActiveReplacementStep(subStep.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all whitespace-nowrap text-sm ${colorClasses[subStep.color]} ${isActive ? 'shadow-md' : 'border border-transparent'}`}
+                >
+                  <span>{subStep.label}</span>
+                  {count > 0 && (
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${isActive ? 'bg-white/30' : 'bg-current/20'}`}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100">
