@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, AlertTriangle, Star } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { useAuthModal } from '../context/AuthModalContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useUser();
+  const { openAuthModal } = useAuthModal();
   const [quantity, setQuantity] = useState(1);
   const [rating, setRating] = useState({ average_rating: 0, total_reviews: 0 });
   const originalPrice = product.original_price || product.originalPrice;
@@ -32,6 +36,10 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
 
   const handleAddToCart = () => {
     if (isOutOfStock) return;
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
     onAddToCart({ ...product, quantity: Math.min(quantity, stock) });
     setQuantity(1);
   };
@@ -49,7 +57,7 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
 
   return (
     <div 
-      className="bg-white rounded-lg sm:rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer"
+      className="bg-card rounded-lg sm:rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group cursor-pointer"
       onClick={handleCardClick}
     >
       <div className="relative">
@@ -73,7 +81,7 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
           </span>
         )}
         {(product.is_bestseller || product.isBestseller) && !isOutOfStock && (
-          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#4CAF50] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+          <span className="absolute top-2 right-2 sm:top-3 sm:right-3 bg-[#2d6d4c] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
             Bestseller
           </span>
         )}
@@ -84,37 +92,41 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
         )}
       </div>
       
-      <div className="p-2.5 sm:p-4">
-        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base mb-1 line-clamp-2 min-h-[32px] sm:min-h-[48px] group-hover:text-[#4CAF50] transition-colors">
+      <div className="p-2.5 sm:p-4 flex flex-col h-[180px] sm:h-[220px]">
+        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base mb-1 line-clamp-2 h-[32px] sm:h-[40px] group-hover:text-[#2d6d4c] transition-colors">
           {product.name}
         </h3>
         <p className="text-[10px] sm:text-sm text-gray-500 mb-1">{product.weight}</p>
         
-        {/* Rating */}
-        {rating.total_reviews > 0 && (
-          <div className="flex items-center gap-1 mb-1">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={10} 
-                  className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
-                />
-              ))}
+        {/* Rating - fixed height container */}
+        <div className="h-[16px] sm:h-[18px] mb-1">
+          {rating.total_reviews > 0 && (
+            <div className="flex items-center gap-1">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star 
+                    key={i} 
+                    size={10} 
+                    className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
+                  />
+                ))}
+              </div>
+              <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
             </div>
-            <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
-          </div>
-        )}
+          )}
+        </div>
         
-        {/* Low Stock Warning */}
-        {isLowStock && (
-          <div className="flex items-center gap-1 text-red-500 mb-1">
-            <AlertTriangle size={12} />
-            <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
-          </div>
-        )}
+        {/* Low Stock Warning - fixed height container */}
+        <div className="h-[16px] sm:h-[18px] mb-1">
+          {isLowStock && (
+            <div className="flex items-center gap-1 text-red-500">
+              <AlertTriangle size={12} />
+              <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
+            </div>
+          )}
+        </div>
         
-        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-3 mt-auto">
           <span className="text-sm sm:text-lg font-bold text-gray-800">₹{product.price.toFixed(2)}</span>
           {originalPrice > product.price && (
             <span className="text-[10px] sm:text-sm text-gray-400 line-through">₹{originalPrice}</span>
@@ -149,7 +161,7 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
             
             <button 
               onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm"
+              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm"
             >
               <span>Add</span>
               <ShoppingCart size={14} className="sm:w-4 sm:h-4" />

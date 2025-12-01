@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { CheckCircle, Package, Truck, CreditCard, MapPin, Mail, Phone, Home } from 'lucide-react';
+import { toast } from '../hooks/use-toast';
 
 const OrderConfirmationPage = () => {
   const { orderId } = useParams();
@@ -33,7 +34,7 @@ const OrderConfirmationPage = () => {
       setOrder(data);
     } catch (error) {
       console.error('Error fetching order:', error);
-      alert('Order not found');
+      toast({ title: 'Error', description: 'Order not found', variant: 'destructive' });
       navigate('/');
     } finally {
       setLoading(false);
@@ -42,9 +43,9 @@ const OrderConfirmationPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4CAF50] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6d4c] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading order details...</p>
         </div>
       </div>
@@ -53,12 +54,12 @@ const OrderConfirmationPage = () => {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600">Order not found</p>
           <button
             onClick={() => navigate('/')}
-            className="mt-4 px-6 py-2 bg-[#4CAF50] text-white rounded-lg hover:bg-[#43A047]"
+            className="mt-4 px-6 py-2 bg-[#2d6d4c] text-white rounded-lg hover:bg-[#43A047]"
           >
             Go Home
           </button>
@@ -68,12 +69,12 @@ const OrderConfirmationPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Success Header */}
-        <div className="bg-white rounded-lg shadow-sm p-8 mb-6 text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="text-[#4CAF50]" size={48} />
+        <div className="bg-card rounded-lg shadow-sm p-8 mb-6 text-center">
+          <div className="w-20 h-20 bg-[#2d6d4c]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="text-[#2d6d4c]" size={48} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Order Placed Successfully!</h1>
           <p className="text-gray-600 mb-4">
@@ -86,14 +87,14 @@ const OrderConfirmationPage = () => {
         </div>
 
         {/* Order Status Timeline */}
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-card rounded-lg shadow-sm p-6 mb-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Status</h2>
           <div className="flex items-center justify-between relative">
             <div className="absolute top-5 left-0 right-0 h-1 bg-gray-200"></div>
-            <div className="absolute top-5 left-0 h-1 bg-[#4CAF50] w-1/4"></div>
+            <div className="absolute top-5 left-0 h-1 bg-[#2d6d4c] w-1/4"></div>
             
             <div className="relative z-10 flex flex-col items-center">
-              <div className="w-10 h-10 bg-[#4CAF50] rounded-full flex items-center justify-center mb-2">
+              <div className="w-10 h-10 bg-[#2d6d4c] rounded-full flex items-center justify-center mb-2">
                 <CheckCircle className="text-white" size={20} />
               </div>
               <span className="text-sm font-medium text-gray-900">Order Placed</span>
@@ -126,7 +127,7 @@ const OrderConfirmationPage = () => {
           {/* Delivery Address */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-2 mb-4">
-              <MapPin className="text-[#4CAF50]" size={20} />
+              <MapPin className="text-[#2d6d4c]" size={20} />
               <h2 className="text-lg font-semibold text-gray-900">Delivery Address</h2>
             </div>
             <div className="space-y-2 text-sm">
@@ -149,7 +150,7 @@ const OrderConfirmationPage = () => {
           {/* Payment Information */}
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center gap-2 mb-4">
-              <CreditCard className="text-[#4CAF50]" size={20} />
+              <CreditCard className="text-[#2d6d4c]" size={20} />
               <h2 className="text-lg font-semibold text-gray-900">Payment Information</h2>
             </div>
             <div className="space-y-3 text-sm">
@@ -160,7 +161,7 @@ const OrderConfirmationPage = () => {
               <div className="flex justify-between">
                 <span className="text-gray-600">Payment Status</span>
                 <span className={`font-medium capitalize ${
-                  order.payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600'
+                  order.payment_status === 'paid' ? 'text-[#2d6d4c]' : 'text-yellow-600'
                 }`}>
                   {order.payment_status}
                 </span>
@@ -217,7 +218,7 @@ const OrderConfirmationPage = () => {
               <span className="text-gray-600">Shipping Fee</span>
               <span className="font-medium">
                 {order.shipping_fee === 0 ? (
-                  <span className="text-green-600">FREE</span>
+                  <span className="text-[#2d6d4c]">FREE</span>
                 ) : (
                   `₹${order.shipping_fee.toFixed(2)}`
                 )}
@@ -225,7 +226,7 @@ const OrderConfirmationPage = () => {
             </div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t">
               <span>Total</span>
-              <span className="text-[#4CAF50]">₹{order.total.toFixed(2)}</span>
+              <span className="text-[#2d6d4c]">₹{order.total.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -234,13 +235,13 @@ const OrderConfirmationPage = () => {
         <div className="flex flex-col sm:flex-row gap-4">
           <button
             onClick={() => navigate('/')}
-            className="flex-1 py-3 px-6 border-2 border-[#4CAF50] text-[#4CAF50] rounded-lg font-semibold hover:bg-green-50 transition-colors"
+            className="flex-1 py-3 px-6 border-2 border-[#2d6d4c] text-[#2d6d4c] rounded-lg font-semibold hover:bg-[#2d6d4c]/10 transition-colors"
           >
             Continue Shopping
           </button>
           <button
             onClick={() => window.print()}
-            className="flex-1 py-3 px-6 bg-[#4CAF50] text-white rounded-lg font-semibold hover:bg-[#43A047] transition-colors"
+            className="flex-1 py-3 px-6 bg-[#2d6d4c] text-white rounded-lg font-semibold hover:bg-[#43A047] transition-colors"
           >
             Print Order Details
           </button>

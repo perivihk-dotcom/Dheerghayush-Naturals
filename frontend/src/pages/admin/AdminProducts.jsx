@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import useBackgroundRefresh from '../../hooks/useBackgroundRefresh';
 import { Plus, Edit, Trash2, Search, X, Save, Package, Star, AlertTriangle, Filter, TrendingUp, Archive } from 'lucide-react';
+import { toast } from '../../hooks/use-toast';
 
 const AdminProducts = () => {
   const { token, BACKEND_URL } = useAdmin();
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -24,38 +23,41 @@ const AdminProducts = () => {
     stock: 100
   });
 
-  useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-  }, []);
-
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data);
-      }
-    } catch (error) {
-      console.error('Error fetching products:', error);
-    } finally {
-      setLoading(false);
+  // Fetch functions for background refresh
+  const fetchProductsData = useCallback(async () => {
+    const response = await fetch(`${BACKEND_URL}/api/admin/products`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      return await response.json();
     }
-  };
+    throw new Error('Failed to fetch products');
+  }, [BACKEND_URL, token]);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/categories`);
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
+  const fetchCategoriesData = useCallback(async () => {
+    const response = await fetch(`${BACKEND_URL}/api/categories`);
+    if (response.ok) {
+      return await response.json();
     }
-  };
+    throw new Error('Failed to fetch categories');
+  }, [BACKEND_URL]);
+
+  // Use background refresh - refreshes every 20 seconds silently
+  const { data: productsData, loading, refresh: refreshProducts } = useBackgroundRefresh(fetchProductsData, {
+    interval: 20000,
+    enabled: true,
+  });
+
+  const { data: categoriesData } = useBackgroundRefresh(fetchCategoriesData, {
+    interval: 60000, // Categories change less frequently
+    enabled: true,
+  });
+
+  const products = productsData || [];
+  const categories = categoriesData || [];
+
+  // Legacy fetchProducts for manual refresh after mutations
+  const fetchProducts = () => refreshProducts();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,11 +87,11 @@ const AdminProducts = () => {
         closeModal();
       } else {
         const error = await response.json();
-        alert(error.detail || 'Failed to save product');
+        toast({ title: 'Error', description: error.detail || 'Failed to save product', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving product:', error);
-      alert('Error saving product');
+      toast({ title: 'Error', description: 'Error saving product', variant: 'destructive' });
     }
   };
 
@@ -104,7 +106,7 @@ const AdminProducts = () => {
         fetchProducts();
         setDeleteConfirm({ show: false, product: null });
       } else {
-        alert('Failed to delete product');
+        toast({ title: 'Error', description: 'Failed to delete product', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error deleting product:', error);
@@ -308,7 +310,7 @@ const AdminProducts = () => {
                     <td className="px-6 py-4 hidden sm:table-cell">
                       <div className="flex items-center gap-2">
                         <span className={`font-semibold ${
-                          product.stock > 20 ? 'text-green-600' : 
+                          product.stock > 20 ? 'text-[#2d6d4c]' : 
                           product.stock > 10 ? 'text-yellow-600' : 'text-red-600'
                         }`}>
                           {product.stock}
@@ -320,8 +322,8 @@ const AdminProducts = () => {
                     </td>
                     <td className="px-6 py-4 hidden lg:table-cell">
                       {product.is_active ? (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 text-sm rounded-full font-medium">
-                          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                        <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#2d6d4c]/20 text-[#2d6d4c] text-sm rounded-full font-medium">
+                          <span className="w-1.5 h-1.5 bg-[#2d6d4c] rounded-full"></span>
                           Active
                         </span>
                       ) : (

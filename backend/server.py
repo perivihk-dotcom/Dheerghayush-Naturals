@@ -256,6 +256,7 @@ class DashboardStats(BaseModel):
     delivered_orders: int
     total_products: int
     total_categories: int
+    total_banners: int = 0
 
 # Razorpay Models
 class RazorpayOrderCreate(BaseModel):
@@ -966,8 +967,15 @@ async def get_user_order_details(order_id: str, user: dict = Depends(get_current
     return order
 
 @api_router.post("/user/orders/{order_id}/cancel")
-async def cancel_user_order(order_id: str, user: dict = Depends(get_current_user)):
+async def cancel_user_order(order_id: str, request: Request, user: dict = Depends(get_current_user)):
     """Cancel an order (only if not delivered)"""
+    # Get reason from request body
+    try:
+        body = await request.json()
+        cancel_reason = body.get('reason', '')
+    except:
+        cancel_reason = ''
+    
     order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
     
     if not order:
@@ -983,17 +991,33 @@ async def cancel_user_order(order_id: str, user: dict = Depends(get_current_user
     tracking_events = order.get('tracking_events', [])
     tracking_events.append({
         "status": "cancelled",
-        "description": "Order cancelled by customer",
+        "description": f"Order cancelled by customer. Reason: {cancel_reason}" if cancel_reason else "Order cancelled by customer",
         "timestamp": now.isoformat(),
         "location": None
     })
     
+    update_data = {
+        "order_status": "cancelled",
+        "tracking_events": tracking_events,
+        "cancelled_at": now.isoformat(),
+        "cancel_reason": cancel_reason
+    }
+    
+    # If prepaid order (RAZORPAY) and payment was successful, initiate refund process
+    if order.get('payment_method') == 'RAZORPAY' and order.get('payment_status') == 'paid':
+        update_data['refund_status'] = 'processing'
+        update_data['refund_initiated_at'] = now.isoformat()
+        tracking_events.append({
+            "status": "refund_initiated",
+            "description": "Refund initiated. Amount will be credited within 1-2 business days.",
+            "timestamp": now.isoformat(),
+            "location": None
+        })
+        update_data['tracking_events'] = tracking_events
+    
     await db.orders.update_one(
         {"order_id": order_id},
-        {"$set": {
-            "order_status": "cancelled",
-            "tracking_events": tracking_events
-        }}
+        {"$set": update_data}
     )
     
     # Restore stock for cancelled items
@@ -1004,6 +1028,14 @@ async def cancel_user_order(order_id: str, user: dict = Depends(get_current_user
         )
     
     logger.info(f"Order {order_id} cancelled by user {user['id']}")
+    
+    # Return appropriate message based on payment method
+    if order.get('payment_method') == 'RAZORPAY' and order.get('payment_status') == 'paid':
+        return {
+            "message": "Order cancelled successfully. Your refund is being processed and will be credited within 1-2 business days.",
+            "refund_status": "processing"
+        }
+    
     return {"message": "Order cancelled successfully"}
 
 @api_router.post("/user/orders/{order_id}/refund")
@@ -1053,8 +1085,15 @@ async def request_refund(order_id: str, user: dict = Depends(get_current_user)):
     return {"message": "Refund request submitted successfully. We will process it within 3-5 business days."}
 
 @api_router.post("/user/orders/{order_id}/replace")
-async def request_replacement(order_id: str, user: dict = Depends(get_current_user)):
+async def request_replacement(order_id: str, request: Request, user: dict = Depends(get_current_user)):
     """Request replacement for a delivered order (within 7 days)"""
+    # Get reason from request body
+    try:
+        body = await request.json()
+        replace_reason = body.get('reason', '')
+    except:
+        replace_reason = ''
+    
     order = await db.orders.find_one({"order_id": order_id, "user_id": user['id']})
     
     if not order:
@@ -1090,11 +1129,12 @@ async def request_replacement(order_id: str, user: dict = Depends(get_current_us
         {"$set": {
             "replacement_status": "requested",
             "replacement_requested_at": now.isoformat(),
+            "replacement_reason": replace_reason,
             "order_status": "replacement_requested"
         }}
     )
     
-    logger.info(f"Replacement requested for order {order_id} by user {user['id']}")
+    logger.info(f"Replacement requested for order {order_id} by user {user['id']}. Reason: {replace_reason}")
     return {"message": "Replacement request submitted successfully. We will contact you shortly."}
 
 @api_router.get("/user/orders/{order_id}/track")
@@ -1538,9 +1578,15 @@ async def get_dashboard_stats(admin: dict = Depends(get_current_admin)):
     """Get dashboard statistics"""
     total_orders = await db.orders.count_documents({})
     
-    # Calculate total revenue only from paid orders
+    # Calculate total revenue from paid orders (excluding refunded orders)
     pipeline = [
-        {"$match": {"payment_status": "paid"}},
+        {"$match": {
+            "payment_status": "paid",
+            "$or": [
+                {"refund_status": {"$exists": False}},
+                {"refund_status": {"$ne": "completed"}}
+            ]
+        }},
         {"$group": {"_id": None, "total": {"$sum": "$total"}}}
     ]
     revenue_result = await db.orders.aggregate(pipeline).to_list(1)
@@ -1550,6 +1596,7 @@ async def get_dashboard_stats(admin: dict = Depends(get_current_admin)):
     delivered_orders = await db.orders.count_documents({"order_status": "delivered"})
     total_products = await db.products.count_documents({"is_active": True})
     total_categories = await db.categories.count_documents({"is_active": True})
+    total_banners = await db.banners.count_documents({"is_active": True})
     
     return DashboardStats(
         total_orders=total_orders,
@@ -1557,7 +1604,8 @@ async def get_dashboard_stats(admin: dict = Depends(get_current_admin)):
         pending_orders=pending_orders,
         delivered_orders=delivered_orders,
         total_products=total_products,
-        total_categories=total_categories
+        total_categories=total_categories,
+        total_banners=total_banners
     )
 
 # ==================== ADMIN CATEGORY ROUTES ====================
@@ -1834,6 +1882,121 @@ async def admin_update_refund_status(order_id: str, update_data: OrderStatusUpda
     updated = await db.orders.find_one({"order_id": order_id}, {"_id": 0})
     logger.info(f"Refund status updated for order {order_id}: {update_dict}")
     return updated
+
+@api_router.post("/admin/orders/{order_id}/process-refund")
+async def admin_process_refund(order_id: str, admin: dict = Depends(get_current_admin)):
+    """Process refund via Razorpay API - automatically transfers money back to customer"""
+    order = await db.orders.find_one({"order_id": order_id})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    
+    # Validate order is eligible for refund
+    if order.get('order_status') != 'cancelled':
+        raise HTTPException(status_code=400, detail="Only cancelled orders can be refunded")
+    
+    if order.get('payment_method') != 'RAZORPAY':
+        raise HTTPException(status_code=400, detail="Only Razorpay payments can be refunded through this API")
+    
+    if order.get('payment_status') != 'paid':
+        raise HTTPException(status_code=400, detail="Payment was not completed for this order")
+    
+    if order.get('refund_status') == 'completed':
+        raise HTTPException(status_code=400, detail="Refund has already been processed for this order")
+    
+    razorpay_payment_id = order.get('razorpay_payment_id')
+    if not razorpay_payment_id:
+        raise HTTPException(status_code=400, detail="Razorpay payment ID not found for this order")
+    
+    now = datetime.now(timezone.utc)
+    tracking_events = order.get('tracking_events', [])
+    
+    try:
+        # Convert amount to paise (Razorpay expects amount in smallest currency unit)
+        refund_amount = int(order['total'] * 100)
+        
+        # Create refund via Razorpay API
+        refund = razorpay_client.payment.refund(razorpay_payment_id, {
+            "amount": refund_amount,
+            "speed": "normal",  # Can be "normal" or "optimum"
+            "notes": {
+                "order_id": order_id,
+                "reason": "Order cancelled by customer"
+            }
+        })
+        
+        logger.info(f"Razorpay refund created: {refund}")
+        
+        # Update order with refund details
+        tracking_events.append({
+            "status": "refund_completed",
+            "description": f"Refund of ₹{order['total']:.2f} processed successfully. Refund ID: {refund.get('id', 'N/A')}",
+            "timestamp": now.isoformat(),
+            "location": None
+        })
+        
+        update_data = {
+            "refund_status": "completed",
+            "refund_completed_at": now.isoformat(),
+            "razorpay_refund_id": refund.get('id'),
+            "tracking_events": tracking_events
+        }
+        
+        await db.orders.update_one({"order_id": order_id}, {"$set": update_data})
+        
+        logger.info(f"Refund processed successfully for order {order_id}")
+        
+        return {
+            "success": True,
+            "message": f"Refund of ₹{order['total']:.2f} processed successfully",
+            "refund_id": refund.get('id'),
+            "refund_status": "completed"
+        }
+        
+    except razorpay.errors.BadRequestError as e:
+        logger.error(f"Razorpay BadRequestError for order {order_id}: {str(e)}")
+        
+        # Update order - keep status as processing for user (not failed)
+        # User will see "Payment under process" instead of error
+        tracking_events.append({
+            "status": "refund_processing",
+            "description": "Refund is being processed. Please wait.",
+            "timestamp": now.isoformat(),
+            "location": None
+        })
+        
+        await db.orders.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "refund_status": "processing",  # Keep as processing for user
+                "refund_error_internal": str(e),  # Store error internally for admin
+                "tracking_events": tracking_events
+            }}
+        )
+        
+        raise HTTPException(status_code=400, detail=f"Refund failed: {str(e)}")
+        
+    except Exception as e:
+        logger.error(f"Error processing refund for order {order_id}: {str(e)}")
+        
+        # Update order - keep status as processing for user (not failed)
+        # User will see "Payment under process" instead of technical error
+        tracking_events.append({
+            "status": "refund_processing",
+            "description": "Refund is being processed. Please wait.",
+            "timestamp": now.isoformat(),
+            "location": None
+        })
+        
+        await db.orders.update_one(
+            {"order_id": order_id},
+            {"$set": {
+                "refund_status": "processing",  # Keep as processing for user
+                "refund_error_internal": str(e),  # Store error internally for admin
+                "tracking_events": tracking_events
+            }}
+        )
+        
+        raise HTTPException(status_code=500, detail=f"Failed to process refund: {str(e)}")
 
 @api_router.put("/admin/orders/{order_id}/replacement")
 async def admin_update_replacement_status(order_id: str, update_data: OrderStatusUpdate, admin: dict = Depends(get_current_admin)):

@@ -482,7 +482,7 @@ export const heroSlides = [
     title: "Pure & Natural",
     subtitle: "Wood Pressed Oils",
     description: "Experience the authentic taste and health benefits of traditionally extracted oils",
-    bgColor: "#4CAF50",
+    bgColor: "#2d6d4c",
     image: "https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzd8MHwxfHNlYXJjaHwxfHxjb29raW5nJTIwb2lsc3xlbnwwfHx8fDE3NjQzMTI4OTh8MA&ixlib=rb-4.1.0&q=85"
   },
   {
@@ -498,7 +498,7 @@ export const heroSlides = [
     title: "A2 Desi Ghee",
     subtitle: "Traditional Bilona Method",
     description: "Pure cow ghee made using the ancient bilona churning process",
-    bgColor: "#8BC34A",
+    bgColor: "#3d8b66",
     image: "https://images.unsplash.com/photo-1573812461383-e5f8b759d12e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzl8MHwxfHNlYXJjaHwxfHxnaGVlfGVufDB8fHx8MTc2NDMxMjg4N3ww&ixlib=rb-4.1.0&q=85"
   }
 ];

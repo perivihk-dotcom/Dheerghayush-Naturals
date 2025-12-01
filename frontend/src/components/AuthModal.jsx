@@ -99,9 +99,9 @@ const AuthModal = ({ isOpen, onClose }) => {
         />
         
         {/* Modal */}
-        <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[90vh]">
+        <div className="relative bg-background rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden max-h-[90vh]">
           {/* Header */}
-          <div className="bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] p-6 text-white">
+          <div className="bg-gradient-to-r from-[#2d6d4c] to-[#3d8b66] p-6 text-white">
             <button 
               onClick={onClose}
               className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -126,7 +126,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onClose();
                 navigate('/profile');
               }}
-              className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+              className="w-full flex items-center gap-3 p-4 bg-card hover:bg-secondary rounded-lg transition-colors text-left"
             >
               <User size={20} className="text-gray-600" />
               <div>
@@ -140,7 +140,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onClose();
                 navigate('/profile?tab=orders');
               }}
-              className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+              className="w-full flex items-center gap-3 p-4 bg-card hover:bg-secondary rounded-lg transition-colors text-left"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
               <div>
@@ -154,7 +154,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 onClose();
                 navigate('/profile?tab=addresses');
               }}
-              className="w-full flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors text-left"
+              className="w-full flex items-center gap-3 p-4 bg-card hover:bg-secondary rounded-lg transition-colors text-left"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-600"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
               <div>
@@ -183,7 +183,7 @@ const AuthModal = ({ isOpen, onClose }) => {
       <div className="fixed inset-0 z-50 flex items-center justify-center">
         <div className="absolute inset-0 bg-black/50" onClick={onClose} />
         <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
-          <div className="bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] p-6 text-white">
+          <div className="bg-gradient-to-r from-[#2d6d4c] to-[#3d8b66] p-6 text-white">
             <button 
               onClick={onClose}
               className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -201,7 +201,7 @@ const AuthModal = ({ isOpen, onClose }) => {
           )}
           
           {successMessage && (
-            <div className="mx-6 mt-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
+            <div className="mx-6 mt-4 p-3 bg-[#2d6d4c]/10 border border-[#2d6d4c]/30 rounded-lg text-[#2d6d4c] text-sm">
               {successMessage}
             </div>
           )}
@@ -216,7 +216,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   placeholder="Enter your registered email"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                   required
                   disabled={loading}
                 />
@@ -226,7 +226,7 @@ const AuthModal = ({ isOpen, onClose }) => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
                 <>
@@ -247,7 +247,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 setSuccessMessage('');
                 setForgotEmail('');
               }}
-              className="text-[#4CAF50] font-medium hover:underline"
+              className="text-[#2d6d4c] font-medium hover:underline"
               disabled={loading}
             >
               ← Back to Sign In
@@ -267,9 +267,9 @@ const AuthModal = ({ isOpen, onClose }) => {
       />
       
       {/* Modal */}
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
+      <div className="relative bg-background rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] p-6 text-white">
+        <div className="bg-gradient-to-r from-[#2d6d4c] to-[#3d8b66] p-6 text-white">
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -303,7 +303,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   placeholder="Enter your name"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                   required
                   disabled={loading}
                 />
@@ -320,7 +320,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                 required
                 disabled={loading}
               />
@@ -345,7 +345,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                       setFormData({...formData, phone: phone});
                     }
                   }}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                   required
                   disabled={loading}
                   maxLength={10}
@@ -363,7 +363,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 placeholder="Enter your password"
                 value={formData.password}
                 onChange={(e) => setFormData({...formData, password: e.target.value})}
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                 required
                 disabled={loading}
                 minLength={6}
@@ -387,7 +387,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                   setError('');
                   setForgotEmail(formData.email);
                 }}
-                className="text-sm text-[#4CAF50] hover:underline"
+                className="text-sm text-[#2d6d4c] hover:underline"
               >
                 Forgot Password?
               </button>
@@ -397,7 +397,7 @@ const AuthModal = ({ isOpen, onClose }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -419,7 +419,7 @@ const AuthModal = ({ isOpen, onClose }) => {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="ml-1 text-[#4CAF50] font-medium hover:underline"
+              className="ml-1 text-[#2d6d4c] font-medium hover:underline"
               disabled={loading}
             >
               {isLogin ? 'Sign Up' : 'Sign In'}

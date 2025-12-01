@@ -19,20 +19,20 @@ code {
 
 @layer base {
     :root {
-        --background: 0 0% 100%;
-        --foreground: 0 0% 3.9%;
+        --background: 45 35% 95%;
+        --foreground: 30 10% 15%;
         --card: 0 0% 100%;
-        --card-foreground: 0 0% 3.9%;
+        --card-foreground: 30 10% 15%;
         --popover: 0 0% 100%;
-        --popover-foreground: 0 0% 3.9%;
-        --primary: 0 0% 9%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 0 0% 96.1%;
-        --secondary-foreground: 0 0% 9%;
-        --muted: 0 0% 96.1%;
-        --muted-foreground: 0 0% 45.1%;
-        --accent: 0 0% 96.1%;
-        --accent-foreground: 0 0% 9%;
+        --popover-foreground: 30 10% 15%;
+        --primary: 152 42% 30%;
+        --primary-foreground: 0 0% 100%;
+        --secondary: 45 40% 92%;
+        --secondary-foreground: 30 10% 20%;
+        --muted: 45 30% 90%;
+        --muted-foreground: 30 10% 40%;
+        --accent: 45 50% 88%;
+        --accent-foreground: 30 15% 15%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
         --border: 0 0% 89.8%;
@@ -79,6 +79,36 @@ code {
     }
     body {
         @apply bg-background text-foreground;
+    }
+    
+    /* Hide scrollbar while keeping scroll functionality */
+    html {
+        scrollbar-width: none; /* Firefox */
+        -ms-overflow-style: none; /* IE and Edge */
+    }
+    html::-webkit-scrollbar {
+        display: none; /* Chrome, Safari, Opera */
+    }
+    
+    /* Custom scrollbar for categories */
+    .categories-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db #f3f4f6;
+    }
+    .categories-scroll::-webkit-scrollbar {
+        width: 6px;
+        display: block;
+    }
+    .categories-scroll::-webkit-scrollbar-track {
+        background: #f3f4f6;
+        border-radius: 3px;
+    }
+    .categories-scroll::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 3px;
+    }
+    .categories-scroll::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
     }
 }
 

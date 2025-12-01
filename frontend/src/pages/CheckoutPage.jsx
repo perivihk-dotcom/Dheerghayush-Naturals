@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, CreditCard, Truck, Shield, Lock, MapPin, Check } from 'lucide-react';
 import { useUser } from '../context/UserContext';
+import OrderSuccessAnimation from '../components/OrderSuccessAnimation';
+import { toast } from '../hooks/use-toast';
 
 // Load Razorpay script dynamically
 const loadRazorpayScript = () => {
@@ -28,6 +30,8 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [useNewAddress, setUseNewAddress] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [pendingOrderData, setPendingOrderData] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -217,12 +221,12 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                   razorpay_signature: response.razorpay_signature,
                 });
               } else {
-                alert('Payment verification failed. Please contact support.');
+                toast({ title: 'Payment Failed', description: 'Payment verification failed. Please contact support.', variant: 'destructive' });
                 setLoading(false);
               }
             } catch (error) {
               console.error('Payment verification error:', error);
-              alert('Payment verification failed. Please contact support.');
+              toast({ title: 'Payment Failed', description: 'Payment verification failed. Please contact support.', variant: 'destructive' });
               setLoading(false);
             }
           },
@@ -235,7 +239,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
             address: `${formData.address}, ${formData.city}, ${formData.state} - ${formData.pincode}`,
           },
           theme: {
-            color: '#4CAF50',
+            color: '#2d6d4c',
           },
           modal: {
             ondismiss: function () {
@@ -246,14 +250,14 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
 
         const razorpay = new window.Razorpay(options);
         razorpay.on('payment.failed', function (response) {
-          alert(`Payment failed: ${response.error.description}`);
+          toast({ title: 'Payment Failed', description: response.error.description, variant: 'destructive' });
           setLoading(false);
         });
         razorpay.open();
 
       } catch (error) {
         console.error('Error initiating Razorpay:', error);
-        alert('Failed to initiate payment. Please try again.');
+        toast({ title: 'Payment Error', description: 'Failed to initiate payment. Please try again.', variant: 'destructive' });
         setLoading(false);
       }
       return;
@@ -309,21 +313,35 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
         clearCart();
       }
       
-      // Navigate to order confirmation page
-      navigate(`/order-confirmation/${order.order_id}`, {
-        state: { order }
-      });
+      // Show success animation before navigating
+      setPendingOrderData(order);
+      setShowSuccessAnimation(true);
+      setLoading(false);
 
     } catch (error) {
       console.error('Error placing order:', error);
-      alert('Failed to place order. Please try again.');
+      toast({ title: 'Order Failed', description: 'Failed to place order. Please try again.', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle animation completion - navigate to confirmation page
+  const handleAnimationComplete = useCallback(() => {
+    if (pendingOrderData) {
+      navigate(`/order-confirmation/${pendingOrderData.order_id}`, {
+        state: { order: pendingOrderData }
+      });
+    }
+  }, [pendingOrderData, navigate]);
+
+  // Show success animation for orders
+  if (showSuccessAnimation) {
+    return <OrderSuccessAnimation onComplete={handleAnimationComplete} paymentMethod={paymentMethod} />;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
@@ -342,9 +360,9 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
           <div className="lg:col-span-2 space-y-6">
             {/* Saved Addresses */}
             {isAuthenticated && savedAddresses.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="bg-card rounded-lg shadow-sm p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <MapPin className="text-[#4CAF50]" size={20} />
+                  <MapPin className="text-[#2d6d4c]" size={20} />
                   <h2 className="text-lg font-semibold text-gray-900">Saved Addresses</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
@@ -358,7 +376,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                       }}
                       className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
                         selectedAddressId === addr.id && !useNewAddress
-                          ? 'border-[#4CAF50] bg-green-50'
+                          ? 'border-[#2d6d4c] bg-[#2d6d4c]/10'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
@@ -370,11 +388,11 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                           <p className="text-sm text-gray-500">Phone: {addr.phone}</p>
                         </div>
                         {selectedAddressId === addr.id && !useNewAddress && (
-                          <Check className="text-[#4CAF50]" size={20} />
+                          <Check className="text-[#2d6d4c]" size={20} />
                         )}
                       </div>
                       {addr.is_primary && (
-                        <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                        <span className="inline-block mt-2 text-xs bg-[#2d6d4c]/20 text-[#2d6d4c] px-2 py-0.5 rounded">
                           Primary
                         </span>
                       )}
@@ -396,7 +414,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                       pincode: ''
                     }));
                   }}
-                  className={`text-sm font-medium ${useNewAddress ? 'text-[#4CAF50]' : 'text-gray-600 hover:text-[#4CAF50]'}`}
+                  className={`text-sm font-medium ${useNewAddress ? 'text-[#2d6d4c]' : 'text-gray-600 hover:text-[#2d6d4c]'}`}
                 >
                   + Use a different address
                 </button>
@@ -404,9 +422,9 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
             )}
 
             {/* Customer Information */}
-            <div className={`bg-white rounded-lg shadow-sm p-6 ${isAuthenticated && savedAddresses.length > 0 && !useNewAddress ? 'hidden' : ''}`}>
+            <div className={`bg-card rounded-lg shadow-sm p-6 ${isAuthenticated && savedAddresses.length > 0 && !useNewAddress ? 'hidden' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#4CAF50] rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-8 h-8 bg-[#2d6d4c] rounded-full flex items-center justify-center text-white font-semibold">
                   1
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">
@@ -424,7 +442,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.name ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="Enter your full name"
                   />
                   {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
@@ -439,7 +457,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="your@email.com"
                   />
                   {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
@@ -454,7 +472,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.phone ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="10-digit mobile number"
                     maxLength="10"
                   />
@@ -470,7 +488,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     value={formData.address}
                     onChange={handleInputChange}
                     rows="3"
-                    className={`w-full px-4 py-2 border ${errors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.address ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="House no., Building name, Street"
                   />
                   {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
@@ -485,7 +503,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="city"
                     value={formData.city}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.city ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.city ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="City"
                   />
                   {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
@@ -500,7 +518,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="state"
                     value={formData.state}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.state ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.state ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="State"
                   />
                   {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
@@ -515,7 +533,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     name="pincode"
                     value={formData.pincode}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-2 border ${errors.pincode ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#4CAF50] focus:border-transparent`}
+                    className={`w-full px-4 py-2 border ${errors.pincode ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-[#2d6d4c] focus:border-transparent`}
                     placeholder="6-digit pincode"
                     maxLength="6"
                   />
@@ -525,9 +543,9 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
+            <div className="bg-card rounded-lg shadow-sm p-6">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-8 h-8 bg-[#4CAF50] rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-8 h-8 bg-[#2d6d4c] rounded-full flex items-center justify-center text-white font-semibold">
                   2
                 </div>
                 <h2 className="text-xl font-semibold text-gray-900">Payment Method</h2>
@@ -535,7 +553,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
 
               <div className="space-y-4">
                 {/* COD Option */}
-                <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'COD' ? 'border-[#4CAF50] bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'COD' ? 'border-[#2d6d4c] bg-[#2d6d4c]/10' : 'border-gray-200 hover:border-gray-300'}`}>
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -546,7 +564,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <Truck className="text-[#4CAF50]" size={20} />
+                      <Truck className="text-[#2d6d4c]" size={20} />
                       <span className="font-semibold text-gray-900">Cash on Delivery</span>
                     </div>
                     <p className="text-sm text-gray-600 mt-1">Pay with cash when your order is delivered</p>
@@ -554,7 +572,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                 </label>
 
                 {/* Razorpay Option */}
-                <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'RAZORPAY' ? 'border-[#4CAF50] bg-green-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                <label className={`flex items-start gap-4 p-4 border-2 rounded-lg cursor-pointer transition-all ${paymentMethod === 'RAZORPAY' ? 'border-[#2d6d4c] bg-[#2d6d4c]/10' : 'border-gray-200 hover:border-gray-300'}`}>
                   <input
                     type="radio"
                     name="paymentMethod"
@@ -565,7 +583,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <CreditCard className="text-[#4CAF50]" size={20} />
+                      <CreditCard className="text-[#2d6d4c]" size={20} />
                       <span className="font-semibold text-gray-900">Pay Online</span>
                       <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">Recommended</span>
                     </div>
@@ -590,8 +608,8 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                           Your payment information is encrypted and secure. Click &quot;Pay&quot; to proceed with payment.
                         </p>
                         <div className="flex items-center gap-2 mt-2">
-                          <Lock size={14} className="text-green-600" />
-                          <span className="text-xs text-green-700">256-bit SSL Encrypted</span>
+                          <Lock size={14} className="text-[#2d6d4c]" />
+                          <span className="text-xs text-[#2d6d4c]">256-bit SSL Encrypted</span>
                         </div>
                       </div>
                     </div>
@@ -603,7 +621,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
+            <div className="bg-card rounded-lg shadow-sm p-6 sticky top-4">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
 
               {/* Cart Items */}
@@ -639,7 +657,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                   <span className="text-gray-600">Shipping</span>
                   <span className="font-medium">
                     {shippingFee === 0 ? (
-                      <span className="text-green-600">FREE</span>
+                      <span className="text-[#2d6d4c]">FREE</span>
                     ) : (
                       `₹${shippingFee.toFixed(2)}`
                     )}
@@ -652,7 +670,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                 )}
                 <div className="flex justify-between text-lg font-bold pt-2 border-t">
                   <span>Total</span>
-                  <span className="text-[#4CAF50]">₹{total.toFixed(2)}</span>
+                  <span className="text-[#2d6d4c]">₹{total.toFixed(2)}</span>
                 </div>
               </div>
 
@@ -665,7 +683,7 @@ const CheckoutPage = ({ cartItems: propCartItems, clearCart }) => {
                     ? 'bg-gray-400 cursor-not-allowed'
                     : paymentMethod === 'RAZORPAY' 
                       ? 'bg-[#072654] hover:bg-[#0a3a7d]'
-                      : 'bg-[#4CAF50] hover:bg-[#43A047]'
+                      : 'bg-[#2d6d4c] hover:bg-[#43A047]'
                 }`}
               >
                 {loading ? 'Processing...' : paymentMethod === 'RAZORPAY' ? `Pay ₹${total.toFixed(2)}` : 'Place Order'}

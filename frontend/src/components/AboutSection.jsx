@@ -27,7 +27,7 @@ const features = [
 
 const AboutSection = () => {
   return (
-    <section id="ourstory" className="py-12 bg-gradient-to-br from-[#4CAF50]/5 to-[#8BC34A]/5">
+    <section id="ourstory" className="py-12 bg-gradient-to-br from-[#2d6d4c]/5 to-[#3d8b66]/5">
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Content */}
@@ -36,7 +36,7 @@ const AboutSection = () => {
               Our Story
             </h2>
             <p className="text-gray-600 mb-6 leading-relaxed">
-              At <span className="font-semibold text-[#4CAF50]">{businessInfo.name}</span>, 
+              At <span className="font-semibold text-[#2d6d4c]">{businessInfo.name}</span>, 
               we believe in bringing the purest and most natural products directly from farms to your table. 
               Our mission is to promote a healthier lifestyle through traditional, chemical-free food products 
               that our ancestors trusted for generations.
@@ -51,7 +51,7 @@ const AboutSection = () => {
             <div className="grid grid-cols-2 gap-4">
               {features.map((feature, index) => (
                 <div key={index} className="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-                  <feature.icon className="text-[#4CAF50] mb-2" size={28} />
+                  <feature.icon className="text-[#2d6d4c] mb-2" size={28} />
                   <h3 className="font-semibold text-gray-800 text-sm mb-1">{feature.title}</h3>
                   <p className="text-xs text-gray-500">{feature.description}</p>
                 </div>
@@ -77,15 +77,15 @@ const AboutSection = () => {
                   />
                   <div>
                     <p className="font-bold text-gray-800">Dheerghayush Naturals</p>
-                    <p className="text-sm text-[#4CAF50]">Farm to Table, Naturally!</p>
+                    <p className="text-sm text-[#2d6d4c]">Farm to Table, Naturally!</p>
                   </div>
                 </div>
               </div>
             </div>
             
             {/* Decorative elements */}
-            <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#4CAF50]/10 rounded-full -z-10" />
-            <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#8BC34A]/10 rounded-full -z-10" />
+            <div className="absolute -top-4 -right-4 w-24 h-24 bg-[#2d6d4c]/10 rounded-full -z-10" />
+            <div className="absolute -bottom-4 -left-4 w-32 h-32 bg-[#3d8b66]/10 rounded-full -z-10" />
           </div>
         </div>
       </div>

@@ -18,14 +18,14 @@ const CartSidebar = ({ isOpen, onClose, cartItems, updateQuantity, removeItem })
       )}
       
       {/* Sidebar */}
-      <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed top-0 right-0 h-full w-full max-w-md bg-background shadow-xl z-50 transform transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="text-[#4CAF50]" size={24} />
+              <ShoppingBag className="text-[#2d6d4c]" size={24} />
               <h2 className="text-lg font-semibold">My Basket</h2>
-              <span className="bg-[#4CAF50] text-white text-xs px-2 py-0.5 rounded-full">
+              <span className="bg-[#2d6d4c] text-white text-xs px-2 py-0.5 rounded-full">
                 {itemCount} items
               </span>
             </div>
@@ -48,7 +48,7 @@ const CartSidebar = ({ isOpen, onClose, cartItems, updateQuantity, removeItem })
             ) : (
               <div className="space-y-4">
                 {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-4 bg-gray-50 rounded-xl p-3">
+                  <div key={item.id} className="flex gap-4 bg-card rounded-xl p-3 shadow-sm">
                     <img 
                       src={item.image} 
                       alt={item.name}
@@ -103,7 +103,7 @@ const CartSidebar = ({ isOpen, onClose, cartItems, updateQuantity, removeItem })
                   navigate('/checkout', { state: { cartItems } });
                   onClose();
                 }}
-                className="w-full bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors"
+                className="w-full bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors"
               >
                 Proceed to Checkout
               </button>

@@ -1,32 +1,30 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import useBackgroundRefresh from '../hooks/useBackgroundRefresh';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CategorySlider = () => {
   const sliderRef = useRef(null);
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchCategories();
+  // Fetch function for background refresh
+  const fetchCategoriesData = useCallback(async () => {
+    const response = await fetch(`${BACKEND_URL}/api/categories`);
+    if (response.ok) {
+      return await response.json();
+    }
+    throw new Error('Failed to fetch categories');
   }, []);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/categories`);
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Use background refresh - refreshes every 60 seconds silently
+  const { data: categoriesData, loading } = useBackgroundRefresh(fetchCategoriesData, {
+    interval: 60000,
+    enabled: true,
+  });
+
+  const categories = categoriesData || [];
 
   const scroll = (direction) => {
     if (sliderRef.current) {
@@ -44,7 +42,7 @@ const CategorySlider = () => {
   }
 
   return (
-    <section className="py-6 bg-gray-50">
+    <section className="py-6 bg-background">
       <div className="max-w-7xl mx-auto px-4">
         <div className="relative">
           <button 
@@ -66,14 +64,14 @@ const CategorySlider = () => {
                 className="flex-shrink-0 group text-left"
               >
                 <div className="w-28 md:w-36 bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all text-center">
-                  <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 rounded-full overflow-hidden border-2 border-gray-100 group-hover:border-[#4CAF50] transition-colors">
+                  <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 rounded-full overflow-hidden border-2 border-gray-100 group-hover:border-[#2d6d4c] transition-colors">
                     <img 
                       src={category.image} 
                       alt={category.name}
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                     />
                   </div>
-                  <p className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-[#4CAF50] transition-colors line-clamp-2">
+                  <p className="text-xs md:text-sm font-medium text-gray-700 group-hover:text-[#2d6d4c] transition-colors line-clamp-2">
                     {category.name}
                   </p>
                 </div>

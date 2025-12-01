@@ -1,71 +1,34 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAdmin } from '../../context/AdminContext';
 import useBackgroundRefresh from '../../hooks/useBackgroundRefresh';
-import { Search, ChevronDown, ChevronUp, Package, Clock, Truck, CheckCircle, XCircle, ShoppingCart, MapPin, CreditCard, PackageCheck } from 'lucide-react';
+import { Search, ChevronDown, ChevronUp, Package, Clock, Truck, CheckCircle, XCircle, MapPin, CreditCard, AlertCircle, RotateCcw } from 'lucide-react';
 import { toast } from '../../hooks/use-toast';
 
-const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
+const AdminReplacements = ({ initialFilter, onFilterApplied }) => {
   const { token, BACKEND_URL } = useAdmin();
   const [orders, setOrders] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeStep, setActiveStep] = useState(initialFilter || 'pending');
+  const [activeStep, setActiveStep] = useState(initialFilter || 'replacement_requested');
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [total, setTotal] = useState(0);
-  const orderRefs = useRef({});
 
-  // Apply initial filter and target order when they change
+  // Apply initial filter when it changes
   useEffect(() => {
     if (initialFilter) {
       setActiveStep(initialFilter);
+      if (onFilterApplied) onFilterApplied();
     }
-    if (targetOrderId) {
-      setExpandedOrder(targetOrderId);
-    }
-    if (onFilterApplied && (initialFilter || targetOrderId)) {
-      // Delay callback to allow state to update first
-      setTimeout(() => onFilterApplied(), 100);
-    }
-  }, [initialFilter, targetOrderId]);
+  }, [initialFilter, onFilterApplied]);
 
-  // Scroll to target order when orders are loaded
-  useEffect(() => {
-    if (targetOrderId && allOrders.length > 0) {
-      // Wait for DOM to update after filter change
-      const scrollToOrder = () => {
-        const element = orderRefs.current[targetOrderId];
-        if (element) {
-          // Get the element's position relative to the viewport
-          const rect = element.getBoundingClientRect();
-          const scrollContainer = document.querySelector('main') || window;
-          
-          // Calculate scroll position to center the element
-          const elementTop = rect.top + window.pageYOffset;
-          const elementHeight = rect.height;
-          const windowHeight = window.innerHeight;
-          const scrollTo = elementTop - (windowHeight / 2) + (elementHeight / 2);
-          
-          // Scroll the window
-          window.scrollTo({
-            top: scrollTo,
-            behavior: 'smooth'
-          });
-        } else {
-          // Retry if element not found yet
-          setTimeout(scrollToOrder, 100);
-        }
-      };
-      setTimeout(scrollToOrder, 600);
-    }
-  }, [targetOrderId, allOrders, activeStep]);
-
-  const orderSteps = [
-    { id: 'pending', label: 'New Orders', icon: Clock, color: 'yellow' },
-    { id: 'confirmed', label: 'Confirmed', icon: PackageCheck, color: 'blue' },
-    { id: 'shipped', label: 'Shipped', icon: Truck, color: 'indigo' },
-    { id: 'out_for_delivery', label: 'Out for Delivery', icon: Truck, color: 'cyan' },
-    { id: 'delivered', label: 'Delivered', icon: CheckCircle, color: 'green' },
-    { id: 'cancelled', label: 'Cancelled', icon: XCircle, color: 'red' },
+  const replacementSteps = [
+    { id: 'replacement_requested', label: 'New Requests', icon: RotateCcw, color: 'pink' },
+    { id: 'replacement_accepted', label: 'Accepted', icon: CheckCircle, color: 'green' },
+    { id: 'replacement_rejected', label: 'Rejected', icon: XCircle, color: 'red' },
+    { id: 'replacement_processing', label: 'Processing', icon: Package, color: 'blue' },
+    { id: 'replacement_shipped', label: 'Shipped', icon: Truck, color: 'indigo' },
+    { id: 'replacement_out_for_delivery', label: 'Out for Delivery', icon: Truck, color: 'cyan' },
+    { id: 'replacement_delivered', label: 'Delivered', icon: CheckCircle, color: 'green' },
   ];
 
   const replacementStatuses = [
@@ -73,6 +36,7 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
     'replacement_accepted',
     'replacement_rejected',
     'replacement_processing',
+    'replacement_shipped',
     'replacement_out_for_delivery',
     'replacement_delivered'
   ];
@@ -84,17 +48,16 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
     });
     if (response.ok) {
       const data = await response.json();
-      // Filter out replacement orders
       return data.orders.filter(order => 
-        !replacementStatuses.includes(order.order_status)
+        replacementStatuses.includes(order.order_status)
       );
     }
     throw new Error('Failed to fetch orders');
   }, [BACKEND_URL, token]);
 
-  // Use background refresh hook - refreshes every 15 seconds silently
+  // Use background refresh - refreshes every 15 seconds silently
   const { data: ordersData, loading, refresh } = useBackgroundRefresh(fetchOrdersData, {
-    interval: 15000, // 15 seconds
+    interval: 15000,
     enabled: true,
   });
 
@@ -120,18 +83,15 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
     return allOrders.filter(order => order.order_status === stepId).length;
   };
 
-  const updateOrderStatus = async (orderId, orderStatus, paymentStatus = null) => {
+  const updateOrderStatus = async (orderId, orderStatus) => {
     try {
-      const body = { order_status: orderStatus };
-      if (paymentStatus) body.payment_status = paymentStatus;
-
       const response = await fetch(`${BACKEND_URL}/api/admin/orders/${orderId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(body)
+        body: JSON.stringify({ order_status: orderStatus })
       });
 
       if (response.ok) {
@@ -146,24 +106,26 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'pending': return <Clock className="w-4 h-4" />;
-      case 'confirmed': return <Package className="w-4 h-4" />;
-      case 'shipped': return <Truck className="w-4 h-4" />;
-      case 'out_for_delivery': return <Truck className="w-4 h-4" />;
-      case 'delivered': return <CheckCircle className="w-4 h-4" />;
-      case 'cancelled': return <XCircle className="w-4 h-4" />;
+      case 'replacement_requested': return <RotateCcw className="w-4 h-4" />;
+      case 'replacement_accepted': return <CheckCircle className="w-4 h-4" />;
+      case 'replacement_rejected': return <XCircle className="w-4 h-4" />;
+      case 'replacement_processing': return <Package className="w-4 h-4" />;
+      case 'replacement_shipped': return <Truck className="w-4 h-4" />;
+      case 'replacement_out_for_delivery': return <Truck className="w-4 h-4" />;
+      case 'replacement_delivered': return <CheckCircle className="w-4 h-4" />;
       default: return <Clock className="w-4 h-4" />;
     }
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'confirmed': return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'shipped': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
-      case 'out_for_delivery': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
-      case 'delivered': return 'bg-[#2d6d4c]/20 text-[#2d6d4c] border-[#2d6d4c]/30';
-      case 'cancelled': return 'bg-red-100 text-red-700 border-red-200';
+      case 'replacement_requested': return 'bg-pink-100 text-pink-700 border-pink-200';
+      case 'replacement_accepted': return 'bg-[#2d6d4c]/20 text-[#2d6d4c] border-[#2d6d4c]/30';
+      case 'replacement_rejected': return 'bg-red-100 text-red-700 border-red-200';
+      case 'replacement_processing': return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'replacement_shipped': return 'bg-indigo-100 text-indigo-700 border-indigo-200';
+      case 'replacement_out_for_delivery': return 'bg-cyan-100 text-cyan-700 border-cyan-200';
+      case 'replacement_delivered': return 'bg-[#2d6d4c]/20 text-[#2d6d4c] border-[#2d6d4c]/30';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -198,39 +160,40 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
     });
   };
 
-  const currentStep = orderSteps.find(s => s.id === activeStep);
+  const currentStep = replacementSteps.find(s => s.id === activeStep);
 
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-4 md:p-6 text-white">
+      <div className="bg-gradient-to-r from-pink-600 to-pink-500 rounded-2xl p-4 md:p-6 text-white">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-bold">Orders</h2>
-            <p className="text-blue-100 mt-1 text-sm md:text-base">Manage and track customer orders</p>
+            <h2 className="text-xl md:text-2xl font-bold">Replacements</h2>
+            <p className="text-pink-100 mt-1 text-sm md:text-base">Manage replacement requests</p>
           </div>
           <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-xl">
-            <ShoppingCart className="w-5 h-5" />
-            <span className="font-semibold">{total} Total Orders</span>
+            <RotateCcw className="w-5 h-5" />
+            <span className="font-semibold">{total} Total Replacements</span>
           </div>
         </div>
       </div>
 
-      {/* Order Status Stepper */}
+
+      {/* Replacement Status Stepper */}
       <div className="bg-white rounded-2xl p-4 border border-gray-100">
         <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-hide">
-          {orderSteps.map((step) => {
+          {replacementSteps.map((step) => {
             const StepIcon = step.icon;
             const count = getStepCount(step.id);
             const isActive = activeStep === step.id;
             
             const colorClasses = {
-              yellow: isActive ? 'bg-yellow-500 text-white' : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100',
+              pink: isActive ? 'bg-pink-500 text-white' : 'bg-pink-50 text-pink-600 hover:bg-pink-100',
+              green: isActive ? 'bg-[#2d6d4c] text-white' : 'bg-[#2d6d4c]/10 text-[#2d6d4c] hover:bg-[#2d6d4c]/20',
+              red: isActive ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 hover:bg-red-100',
               blue: isActive ? 'bg-blue-500 text-white' : 'bg-blue-50 text-blue-600 hover:bg-blue-100',
               indigo: isActive ? 'bg-indigo-500 text-white' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
               cyan: isActive ? 'bg-cyan-500 text-white' : 'bg-cyan-50 text-cyan-600 hover:bg-cyan-100',
-              green: isActive ? 'bg-[#2d6d4c] text-white' : 'bg-[#2d6d4c]/10 text-[#2d6d4c] hover:bg-[#2d6d4c]/20',
-              red: isActive ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600 hover:bg-red-100',
             };
             
             return (
@@ -261,36 +224,29 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
             placeholder="Search by order ID, name, email, or phone..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent bg-gray-50"
           />
         </div>
       </div>
-
 
       {/* Orders List */}
       <div className="space-y-3">
         {loading ? (
           <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
-            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-500 mt-3">Loading orders...</p>
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-pink-600 mx-auto"></div>
+            <p className="text-gray-500 mt-3">Loading replacements...</p>
           </div>
         ) : filteredOrders.length === 0 ? (
           <div className="bg-white rounded-2xl p-8 text-center border border-gray-100">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Package className="w-8 h-8 text-gray-400" />
+              <RotateCcw className="w-8 h-8 text-gray-400" />
             </div>
-            <p className="text-gray-900 font-medium">No orders found</p>
+            <p className="text-gray-900 font-medium">No replacements found</p>
             <p className="text-gray-500 text-sm mt-1">Try adjusting your search or filters</p>
           </div>
         ) : (
           filteredOrders.map((order) => (
-            <div 
-              key={order.order_id} 
-              ref={(el) => orderRefs.current[order.order_id] = el}
-              className={`bg-white rounded-2xl border overflow-hidden hover:shadow-md transition-all ${
-                targetOrderId === order.order_id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-100'
-              }`}
-            >
+            <div key={order.order_id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
               {/* Order Header */}
               <div
                 className="p-4 cursor-pointer"
@@ -298,8 +254,8 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl flex items-center justify-center">
-                      <span className="text-lg font-bold text-blue-600">
+                    <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-50 rounded-xl flex items-center justify-center">
+                      <span className="text-lg font-bold text-pink-600">
                         {order.customer_info?.name?.charAt(0) || '?'}
                       </span>
                     </div>
@@ -317,15 +273,15 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border ${getStatusColor(order.order_status)}`}>
                       {getStatusIcon(order.order_status)}
-                      {order.order_status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {order.order_status.replace(/replacement_/g, '').replace(/\b\w/g, l => l.toUpperCase())}
                     </span>
                     <span className={`px-3 py-1.5 rounded-xl text-sm font-medium ${getPaymentStatusColor(order.payment_status)}`}>
                       {order.payment_status.charAt(0).toUpperCase() + order.payment_status.slice(1)}
                     </span>
                     <p className="font-bold text-gray-900 text-lg">₹{order.total.toLocaleString()}</p>
-                    <div className={`p-2 rounded-xl transition ${expandedOrder === order.order_id ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                    <div className={`p-2 rounded-xl transition ${expandedOrder === order.order_id ? 'bg-pink-100' : 'bg-gray-100'}`}>
                       {expandedOrder === order.order_id ? (
-                        <ChevronUp className="w-5 h-5 text-blue-600" />
+                        <ChevronUp className="w-5 h-5 text-pink-600" />
                       ) : (
                         <ChevronDown className="w-5 h-5 text-gray-400" />
                       )}
@@ -333,6 +289,7 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
                   </div>
                 </div>
               </div>
+
 
               {/* Expanded Details */}
               {expandedOrder === order.order_id && (
@@ -398,61 +355,81 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
                         ))}
                       </div>
                     </div>
-                    
-                    {/* Cancel/Replacement Reason */}
-                    {order.order_status === 'cancelled' && order.cancel_reason && (
-                      <div className="mt-4 bg-red-50 rounded-xl p-4 border border-red-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                            <XCircle className="w-4 h-4 text-red-600" />
-                          </div>
-                          <h4 className="font-semibold text-red-800">Cancellation Reason</h4>
-                        </div>
-                        <p className="text-sm text-red-700 bg-white p-3 rounded-lg border border-red-100">
-                          {order.cancel_reason}
-                        </p>
-                      </div>
-                    )}
 
-                    {order.replacement_reason && (
-                      <div className="mt-4 bg-blue-50 rounded-xl p-4 border border-blue-200">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                            <Package className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <h4 className="font-semibold text-blue-800">Replacement Reason</h4>
-                        </div>
-                        <p className="text-sm text-blue-700 bg-white p-3 rounded-lg border border-blue-100">
-                          {order.replacement_reason}
-                        </p>
+                    {/* Replacement Info */}
+                    <div className="mt-6 bg-pink-50 rounded-xl p-4 border border-pink-200">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-5 h-5 text-pink-600" />
+                        <h4 className="font-semibold text-pink-800">Replacement Request</h4>
                       </div>
-                    )}
-
-                    {/* Non-refundable notice */}
-                    <div className="mt-4 text-center py-2 px-3 bg-gray-50 rounded-lg">
-                      <p className="text-xs text-gray-500">
-                        Products are non-refundable. Replacement available within 7 days of delivery.
-                      </p>
+                      {order.replacement_reason ? (
+                        <div className="space-y-2">
+                          <p className="text-sm font-medium text-pink-800">Customer's Reason:</p>
+                          <p className="text-sm text-pink-700 bg-white p-3 rounded-lg border border-pink-100">
+                            {order.replacement_reason}
+                          </p>
+                          {order.replacement_requested_at && (
+                            <p className="text-xs text-pink-600 mt-2">
+                              Requested on: {formatDate(order.replacement_requested_at)}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-pink-700">
+                          Customer has requested a replacement for this order.
+                          {order.replacement_requested_at && (
+                            <span className="block mt-1">Requested on: {formatDate(order.replacement_requested_at)}</span>
+                          )}
+                        </p>
+                      )}
                     </div>
 
                     {/* Actions */}
                     <div className="mt-6 bg-white rounded-xl p-4 border border-gray-100">
-                      <h4 className="font-semibold text-gray-900 mb-4">Update Order Status</h4>
+                      <h4 className="font-semibold text-gray-900 mb-4">Update Replacement Status</h4>
                       <div className="flex flex-wrap gap-2">
-                        {['pending', 'confirmed', 'shipped', 'out_for_delivery', 'delivered'].map((status) => (
+                        {/* Show Accepted/Rejected only for requested status */}
+                        {order.order_status === 'replacement_requested' && (
+                          <>
+                            {['replacement_accepted', 'replacement_rejected'].map((status) => (
+                              <button
+                                key={status}
+                                onClick={() => updateOrderStatus(order.order_id, status)}
+                                className="px-4 py-2 rounded-xl text-sm font-medium transition bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200"
+                              >
+                                {status.replace(/replacement_/g, '').replace(/\b\w/g, l => l.toUpperCase())}
+                              </button>
+                            ))}
+                          </>
+                        )}
+                        {/* Show only Rejected for rejected status */}
+                        {order.order_status === 'replacement_rejected' && (
                           <button
-                            key={status}
-                            onClick={() => updateOrderStatus(order.order_id, status, status === 'delivered' ? 'paid' : null)}
-                            disabled={order.order_status === status}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
-                              order.order_status === status
-                                ? 'bg-blue-200 text-blue-800 border-2 border-blue-400 cursor-default shadow-sm'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
-                            }`}
+                            disabled
+                            className="px-4 py-2 rounded-xl text-sm font-medium bg-blue-500 text-white border-2 border-blue-600 cursor-default shadow-sm"
                           >
-                            {status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            Rejected
                           </button>
-                        ))}
+                        )}
+                        {/* Show delivery flow options only if status is accepted or beyond (not rejected) */}
+                        {['replacement_accepted', 'replacement_processing', 'replacement_shipped', 'replacement_out_for_delivery', 'replacement_delivered'].includes(order.order_status) && (
+                          <>
+                            {['replacement_accepted', 'replacement_processing', 'replacement_shipped', 'replacement_out_for_delivery', 'replacement_delivered'].map((status) => (
+                              <button
+                                key={status}
+                                onClick={() => updateOrderStatus(order.order_id, status)}
+                                disabled={order.order_status === status}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${
+                                  order.order_status === status
+                                    ? 'bg-blue-500 text-white border-2 border-blue-600 cursor-default shadow-sm'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                                }`}
+                              >
+                                {status.replace(/replacement_/g, '').replace(/\b\w/g, l => l.toUpperCase())}
+                              </button>
+                            ))}
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -466,11 +443,11 @@ const AdminOrders = ({ initialFilter, targetOrderId, onFilterApplied }) => {
       {/* Results count */}
       {!loading && (
         <p className="text-sm text-gray-500 text-center">
-          Showing {filteredOrders.length} {currentStep?.label || ''} order{filteredOrders.length !== 1 ? 's' : ''}
+          Showing {filteredOrders.length} {currentStep?.label || ''} replacement{filteredOrders.length !== 1 ? 's' : ''}
         </p>
       )}
     </div>
   );
 };
 
-export default AdminOrders;
+export default AdminReplacements;

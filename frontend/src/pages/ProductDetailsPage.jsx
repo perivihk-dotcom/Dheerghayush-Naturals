@@ -1,46 +1,70 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Plus, Minus, ArrowLeft, Star, Truck, Shield, Leaf, AlertTriangle, User } from 'lucide-react';
+import useBackgroundRefresh from '../hooks/useBackgroundRefresh';
+import { useUser } from '../context/UserContext';
+import { useAuthModal } from '../context/AuthModalContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const ProductDetailsPage = ({ onAddToCart }) => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { isAuthenticated } = useUser();
+  const { openAuthModal } = useAuthModal();
   const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [rating, setRating] = useState({ average_rating: 0, total_reviews: 0, rating_distribution: {} });
-  const [reviews, setReviews] = useState([]);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [isNewArrival, setIsNewArrival] = useState(false);
 
-  useEffect(() => {
-    fetchProduct();
-    fetchRating();
-    fetchReviews();
+  // Fetch function for background refresh - combines product, rating, and reviews
+  const fetchProductData = useCallback(async () => {
+    const [productRes, ratingRes, reviewsRes] = await Promise.all([
+      fetch(`${BACKEND_URL}/api/products/${productId}`),
+      fetch(`${BACKEND_URL}/api/products/${productId}/rating`),
+      fetch(`${BACKEND_URL}/api/products/${productId}/reviews?limit=5`)
+    ]);
+
+    if (!productRes.ok) {
+      throw new Error('Product not found');
+    }
+
+    const productData = await productRes.json();
+    const ratingData = ratingRes.ok ? await ratingRes.json() : { average_rating: 0, total_reviews: 0, rating_distribution: {} };
+    const reviewsData = reviewsRes.ok ? await reviewsRes.json() : { reviews: [] };
+
+    return {
+      product: productData,
+      rating: ratingData,
+      reviews: reviewsData.reviews || []
+    };
   }, [productId]);
 
-  const fetchProduct = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${BACKEND_URL}/api/products/${productId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setProduct(data);
-        fetchRelatedProducts(data.category);
-        checkIfNewArrival();
-      } else {
-        navigate('/products');
-      }
-    } catch (error) {
-      console.error('Error fetching product:', error);
+  // Use background refresh - refreshes every 30 seconds silently
+  const { data, loading, error } = useBackgroundRefresh(fetchProductData, {
+    interval: 30000,
+    enabled: !!productId,
+    deps: [productId],
+  });
+
+  const product = data?.product || null;
+  const rating = data?.rating || { average_rating: 0, total_reviews: 0, rating_distribution: {} };
+  const reviews = data?.reviews || [];
+
+  // Redirect if product not found
+  useEffect(() => {
+    if (error) {
       navigate('/products');
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [error, navigate]);
+
+  // Fetch related products and check new arrival when product changes
+  useEffect(() => {
+    if (product) {
+      fetchRelatedProducts(product.category);
+      checkIfNewArrival();
+    }
+  }, [product?.id, product?.category]);
 
   const checkIfNewArrival = async () => {
     try {
@@ -52,33 +76,6 @@ const ProductDetailsPage = ({ onAddToCart }) => {
       }
     } catch (error) {
       console.error('Error checking new arrival:', error);
-    }
-  };
-
-  const fetchRating = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/products/${productId}/rating`);
-      if (response.ok) {
-        const data = await response.json();
-        setRating(data);
-      }
-    } catch (error) {
-      console.error('Error fetching rating:', error);
-    }
-  };
-
-  const fetchReviews = async () => {
-    try {
-      setLoadingReviews(true);
-      const response = await fetch(`${BACKEND_URL}/api/products/${productId}/reviews?limit=5`);
-      if (response.ok) {
-        const data = await response.json();
-        setReviews(data.reviews || []);
-      }
-    } catch (error) {
-      console.error('Error fetching reviews:', error);
-    } finally {
-      setLoadingReviews(false);
     }
   };
 
@@ -96,6 +93,10 @@ const ProductDetailsPage = ({ onAddToCart }) => {
 
   const handleAddToCart = () => {
     if (product && stock > 0) {
+      if (!isAuthenticated) {
+        openAuthModal();
+        return;
+      }
       onAddToCart({ ...product, quantity: Math.min(quantity, stock) });
       setQuantity(1);
     }
@@ -104,7 +105,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#2d6d4c]"></div>
       </div>
     );
   }
@@ -124,18 +125,18 @@ const ProductDetailsPage = ({ onAddToCart }) => {
   const isLowStock = stock > 0 && stock <= 10;
 
   return (
-    <div className="min-h-screen bg-gray-50 py-4 md:py-8">
+    <div className="min-h-screen bg-background py-4 md:py-8">
       <div className="max-w-7xl mx-auto px-4">
         {/* Back Button */}
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-green-600 mb-4 md:mb-6 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-[#2d6d4c] mb-4 md:mb-6 transition-colors"
         >
           <ArrowLeft size={20} />
           <span>Back</span>
         </button>
 
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-sm overflow-hidden">
           <div className="grid md:grid-cols-2 gap-6 md:gap-8 p-4 md:p-8">
             {/* Product Image */}
             <div className="relative">
@@ -159,7 +160,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
                 </span>
               )}
               {(product.is_bestseller || product.isBestseller) && !isOutOfStock && (
-                <span className="absolute top-4 right-4 bg-[#4CAF50] text-white text-sm font-semibold px-3 py-1 rounded-lg">
+                <span className="absolute top-4 right-4 bg-[#2d6d4c] text-white text-sm font-semibold px-3 py-1 rounded-lg">
                   Bestseller
                 </span>
               )}
@@ -173,7 +174,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
             {/* Product Info */}
             <div className="flex flex-col">
               <div className="mb-4">
-                <p className="text-sm text-green-600 font-medium mb-2 capitalize">{product.category?.replace('-', ' ')}</p>
+                <p className="text-sm text-[#2d6d4c] font-medium mb-2 capitalize">{product.category?.replace('-', ' ')}</p>
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">{product.name}</h1>
                 <p className="text-gray-500">{product.weight}</p>
               </div>
@@ -212,7 +213,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
                   <span className="text-xl text-gray-400 line-through">₹{originalPrice}</span>
                 )}
                 {discount > 0 && (
-                  <span className="text-green-600 font-medium">Save ₹{(originalPrice - product.price).toFixed(2)}</span>
+                  <span className="text-[#2d6d4c] font-medium">Save ₹{(originalPrice - product.price).toFixed(2)}</span>
                 )}
               </div>
 
@@ -223,16 +224,16 @@ const ProductDetailsPage = ({ onAddToCart }) => {
 
               {/* Features */}
               <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="flex flex-col items-center text-center p-3 bg-green-50 rounded-lg">
-                  <Leaf size={24} className="text-green-600 mb-2" />
+                <div className="flex flex-col items-center text-center p-3 bg-[#2d6d4c]/10 rounded-lg">
+                  <Leaf size={24} className="text-[#2d6d4c] mb-2" />
                   <span className="text-xs text-gray-600">100% Natural</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-3 bg-green-50 rounded-lg">
-                  <Shield size={24} className="text-green-600 mb-2" />
+                <div className="flex flex-col items-center text-center p-3 bg-[#2d6d4c]/10 rounded-lg">
+                  <Shield size={24} className="text-[#2d6d4c] mb-2" />
                   <span className="text-xs text-gray-600">Quality Assured</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-3 bg-green-50 rounded-lg">
-                  <Truck size={24} className="text-green-600 mb-2" />
+                <div className="flex flex-col items-center text-center p-3 bg-[#2d6d4c]/10 rounded-lg">
+                  <Truck size={24} className="text-[#2d6d4c] mb-2" />
                   <span className="text-xs text-gray-600">Fast Delivery</span>
                 </div>
               </div>
@@ -266,7 +267,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
 
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 flex items-center justify-center gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+                    className="flex-1 flex items-center justify-center gap-2 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
                   >
                     <ShoppingCart size={20} />
                     <span>Add to Cart</span>
@@ -281,7 +282,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
                 ) : isLowStock ? (
                   <span className="text-red-500 font-medium">Hurry up! Only {stock} stock available</span>
                 ) : (
-                  <span className="text-green-600">✓ In Stock</span>
+                  <span className="text-[#2d6d4c]">✓ In Stock</span>
                 )}
               </p>
             </div>
@@ -289,7 +290,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
         </div>
 
         {/* Customer Reviews Section */}
-        <div className="mt-8 bg-white rounded-2xl shadow-sm p-6">
+        <div className="mt-8 bg-card rounded-2xl shadow-sm p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-gray-800">Customer Reviews</h2>
             {rating.total_reviews > 0 && (
@@ -336,21 +337,21 @@ const ProductDetailsPage = ({ onAddToCart }) => {
           {/* Reviews List */}
           {loadingReviews ? (
             <div className="flex justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2d6d4c]"></div>
             </div>
           ) : reviews.length > 0 ? (
             <div className="space-y-4">
               {reviews.map((review) => (
                 <div key={review.id} className="border-b border-gray-100 pb-4 last:border-0">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                      <User size={20} className="text-green-600" />
+                    <div className="w-10 h-10 bg-[#2d6d4c]/20 rounded-full flex items-center justify-center">
+                      <User size={20} className="text-[#2d6d4c]" />
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-gray-800">{review.user_name}</span>
                         {review.is_verified_purchase && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">Verified Purchase</span>
+                          <span className="text-xs bg-[#2d6d4c]/20 text-[#2d6d4c] px-2 py-0.5 rounded">Verified Purchase</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mb-2">
@@ -401,7 +402,7 @@ const ProductDetailsPage = ({ onAddToCart }) => {
                   <div
                     key={relProduct.id}
                     onClick={() => navigate(`/product/${relProduct.id}`)}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
+                    className="bg-card rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden"
                   >
                     <div className={`relative aspect-square ${relIsOutOfStock ? 'opacity-50' : ''}`}>
                       <img

@@ -10,7 +10,7 @@ const iconMap = {
 };
 
 const healthBenefits = [
-  { id: 1, name: "Digestive Health", icon: "Salad", color: "#4CAF50" },
+  { id: 1, name: "Digestive Health", icon: "Salad", color: "#2d6d4c" },
   { id: 2, name: "Heart Health", icon: "Heart", color: "#E91E63" },
   { id: 3, name: "Weight Management", icon: "Scale", color: "#FF9800" },
   { id: 4, name: "Immunity Boost", icon: "Shield", color: "#2196F3" },
@@ -19,7 +19,7 @@ const healthBenefits = [
 
 const HealthBenefits = () => {
   return (
-    <section className="py-10 bg-gradient-to-br from-gray-50 to-gray-100">
+    <section className="py-10 bg-gradient-to-br from-background to-muted">
       <div className="max-w-7xl mx-auto px-4">
         <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-8">
           Health Benefits

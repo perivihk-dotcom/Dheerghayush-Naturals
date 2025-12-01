@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import "./App.css";
 import ScrollToTop from './components/ScrollToTop';
+import { Toaster } from './components/ui/toaster';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
@@ -22,6 +23,7 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import { AdminProvider, useAdmin } from './context/AdminContext';
 import { UserProvider } from './context/UserContext';
+import { AuthModalProvider, useAuthModal } from './context/AuthModalContext';
 
 // Protected Route for Admin
 const ProtectedAdminRoute = ({ children }) => {
@@ -29,7 +31,7 @@ const ProtectedAdminRoute = ({ children }) => {
   
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
       </div>
     );
@@ -42,10 +44,11 @@ const ProtectedAdminRoute = ({ children }) => {
   return children;
 };
 
-function App() {
+// Inner App component that uses the auth modal context
+function AppContent() {
   const [cartItems, setCartItems] = useState([]);
   const [showCart, setShowCart] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
+  const { showAuth, openAuthModal, closeAuthModal } = useAuthModal();
 
   const addToCart = (product) => {
     setCartItems((prevItems) => {
@@ -83,9 +86,7 @@ function App() {
   };
 
   return (
-    <AdminProvider>
-      <UserProvider>
-        <Router>
+    <Router>
           <ScrollToTop />
           <Routes>
             {/* Admin Routes */}
@@ -103,11 +104,11 @@ function App() {
             <Route
               path="/*"
               element={
-                <div className="App min-h-screen bg-gray-50 pb-16 md:pb-0">
+                <div className="App min-h-screen bg-background pb-16 md:pb-0">
                   <Header 
                     cartItems={cartItems} 
                     setShowCart={setShowCart} 
-                    setShowAuth={setShowAuth}
+                    setShowAuth={openAuthModal}
                   />
                   
                   <Routes>
@@ -136,15 +137,31 @@ function App() {
                   
                   <AuthModal 
                     isOpen={showAuth} 
-                    onClose={() => setShowAuth(false)} 
+                    onClose={closeAuthModal} 
                   />
                   
-                  <BottomNav setShowCart={setShowCart} cartItems={cartItems} />
+                  <BottomNav setShowCart={setShowCart} cartItems={cartItems} setShowAuth={openAuthModal} />
                 </div>
               }
             />
           </Routes>
-        </Router>
+    </Router>
+  );
+}
+
+// Main App component with providers
+function App() {
+  useEffect(() => {
+    document.title = 'Dheerghayush Naturals';
+  }, []);
+
+  return (
+    <AdminProvider>
+      <UserProvider>
+        <AuthModalProvider>
+          <AppContent />
+          <Toaster />
+        </AuthModalProvider>
       </UserProvider>
     </AdminProvider>
   );

@@ -81,7 +81,7 @@ const Testimonials = () => {
   const fourStarReviews = testimonials.filter(t => t.rating === 4);
 
   return (
-    <section className="py-12 bg-white">
+    <section className="py-12 bg-card">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header with Google Rating */}
         <div className="text-center mb-10">
@@ -123,16 +123,21 @@ const Testimonials = () => {
                   key={testimonial.id}
                   className="min-w-full px-4"
                 >
-                  <div className={`max-w-3xl mx-auto rounded-2xl p-8 md:p-10 ${
-                    testimonial.rating === 5 
-                      ? 'bg-gradient-to-br from-[#4CAF50]/5 to-[#8BC34A]/5' 
-                      : 'bg-gradient-to-br from-blue-50 to-gray-50'
-                  }`}>
-                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start">
+                  <a 
+                    href={googleRating.mapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`block max-w-3xl mx-auto rounded-2xl p-8 md:p-10 h-[280px] md:h-[220px] cursor-pointer hover:shadow-lg transition-shadow ${
+                      testimonial.rating === 5 
+                        ? 'bg-gradient-to-br from-[#2d6d4c]/5 to-[#3d8b66]/5' 
+                        : 'bg-gradient-to-br from-blue-50 to-gray-50'
+                    }`}
+                  >
+                    <div className="flex flex-col md:flex-row gap-6 items-center md:items-start h-full">
                       <div className="flex-shrink-0">
                         <GoogleAvatar name={testimonial.name} rating={testimonial.rating} />
                       </div>
-                      <div className="text-center md:text-left flex-1">
+                      <div className="text-center md:text-left flex-1 flex flex-col h-full overflow-hidden">
                         <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
                           <h3 className="font-semibold text-gray-800 text-lg">{testimonial.name}</h3>
                           {testimonial.isGoogleReview && (
@@ -148,13 +153,13 @@ const Testimonials = () => {
                           <StarRating rating={testimonial.rating} size={16} />
                           <span className="text-sm text-gray-500">{testimonial.timeAgo}</span>
                         </div>
-                        <div className="flex items-start gap-2">
-                          <Quote size={20} className="text-[#4CAF50] rotate-180 flex-shrink-0 mt-1 hidden md:block" />
-                          <p className="text-gray-600 leading-relaxed">{testimonial.text}</p>
+                        <div className="flex items-start gap-2 flex-1 overflow-hidden">
+                          <Quote size={20} className="text-[#2d6d4c] rotate-180 flex-shrink-0 mt-1 hidden md:block" />
+                          <p className="text-gray-600 leading-relaxed line-clamp-4">{testimonial.text}</p>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  </a>
                 </div>
               ))}
             </div>
@@ -163,13 +168,13 @@ const Testimonials = () => {
           {/* Navigation */}
           <button 
             onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 hover:border-[#4CAF50] transition-all shadow-md"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 hover:border-[#2d6d4c] transition-all shadow-md"
           >
             <ChevronLeft size={20} />
           </button>
           <button 
             onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 hover:border-[#4CAF50] transition-all shadow-md"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-10 h-10 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 hover:border-[#2d6d4c] transition-all shadow-md"
           >
             <ChevronRight size={20} />
           </button>
@@ -183,7 +188,7 @@ const Testimonials = () => {
               onClick={() => setCurrentIndex(index)}
               className={`h-2 rounded-full transition-all ${
                 index === currentIndex 
-                  ? `w-8 ${review.rating === 5 ? 'bg-[#4CAF50]' : 'bg-blue-500'}` 
+                  ? `w-8 ${review.rating === 5 ? 'bg-[#2d6d4c]' : 'bg-blue-500'}` 
                   : 'w-2 bg-gray-300'
               }`}
             />
@@ -196,7 +201,7 @@ const Testimonials = () => {
             href={googleRating.mapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-[#4CAF50] hover:text-[#43A047] font-medium transition-colors"
+            className="inline-flex items-center gap-2 text-[#2d6d4c] hover:text-[#43A047] font-medium transition-colors"
           >
             View all reviews on Google
             <ExternalLink size={16} />

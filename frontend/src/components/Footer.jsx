@@ -19,13 +19,13 @@ const Footer = () => {
               />
               <div>
                 <h3 className="text-xl font-bold text-white">Dheerghayush</h3>
-                <p className="text-sm text-[#4CAF50]">Naturals</p>
+                <p className="text-sm text-[#2d6d4c]">Naturals</p>
               </div>
             </Link>
             <p className="text-sm mb-4 leading-relaxed">
               Your trusted source for pure and natural products. We bring farm-fresh goodness directly to your table.
             </p>
-            <div className="flex items-center gap-2 text-[#4CAF50]">
+            <div className="flex items-center gap-2 text-[#2d6d4c]">
               <Leaf size={16} />
               <span className="text-sm font-medium">100% Natural & Organic</span>
             </div>
@@ -39,7 +39,7 @@ const Footer = () => {
                 <li key={cat.id}>
                   <Link 
                     to={`/products?category=${cat.slug}`}
-                    className="text-sm hover:text-[#4CAF50] transition-colors"
+                    className="text-sm hover:text-[#2d6d4c] transition-colors"
                   >
                     {cat.name}
                   </Link>
@@ -53,19 +53,19 @@ const Footer = () => {
             <h4 className="text-white font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-sm hover:text-[#4CAF50] transition-colors">Home</Link>
+                <Link to="/" className="text-sm hover:text-[#2d6d4c] transition-colors">Home</Link>
               </li>
               <li>
-                <Link to="/products" className="text-sm hover:text-[#4CAF50] transition-colors">All Products</Link>
+                <Link to="/products" className="text-sm hover:text-[#2d6d4c] transition-colors">All Products</Link>
               </li>
               <li>
-                <Link to="/combos" className="text-sm hover:text-[#4CAF50] transition-colors">Combo Offers</Link>
+                <Link to="/combos" className="text-sm hover:text-[#2d6d4c] transition-colors">Combo Offers</Link>
               </li>
               <li>
-                <Link to="/our-story" className="text-sm hover:text-[#4CAF50] transition-colors">Our Story</Link>
+                <Link to="/our-story" className="text-sm hover:text-[#2d6d4c] transition-colors">Our Story</Link>
               </li>
               <li>
-                <Link to="/contact" className="text-sm hover:text-[#4CAF50] transition-colors">Contact Us</Link>
+                <Link to="/contact" className="text-sm hover:text-[#2d6d4c] transition-colors">Contact Us</Link>
               </li>
             </ul>
           </div>
@@ -74,15 +74,15 @@ const Footer = () => {
           <div>
             <h4 className="text-white font-semibold mb-4">Contact Us</h4>
             <div className="space-y-3">
-              <a href={`tel:${businessInfo.phone}`} className="flex items-center gap-3 text-sm hover:text-[#4CAF50] transition-colors">
+              <a href={`tel:${businessInfo.phone}`} className="flex items-center gap-3 text-sm hover:text-[#2d6d4c] transition-colors">
                 <Phone size={16} />
                 <span>{businessInfo.phone}</span>
               </a>
-              <a href={`tel:${businessInfo.phone2}`} className="flex items-center gap-3 text-sm hover:text-[#4CAF50] transition-colors">
+              <a href={`tel:${businessInfo.phone2}`} className="flex items-center gap-3 text-sm hover:text-[#2d6d4c] transition-colors">
                 <Phone size={16} />
                 <span>{businessInfo.phone2}</span>
               </a>
-              <a href={`mailto:${businessInfo.email}`} className="flex items-center gap-3 text-sm hover:text-[#4CAF50] transition-colors">
+              <a href={`mailto:${businessInfo.email}`} className="flex items-center gap-3 text-sm hover:text-[#2d6d4c] transition-colors">
                 <Mail size={16} />
                 <span>{businessInfo.email}</span>
               </a>
@@ -94,16 +94,16 @@ const Footer = () => {
             
             {/* Social Links */}
             <div className="flex gap-3 mt-6">
-              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#4CAF50] rounded-full flex items-center justify-center transition-colors">
+              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#2d6d4c] rounded-full flex items-center justify-center transition-colors">
                 <Facebook size={18} />
               </a>
-              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#4CAF50] rounded-full flex items-center justify-center transition-colors">
+              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#2d6d4c] rounded-full flex items-center justify-center transition-colors">
                 <Instagram size={18} />
               </a>
-              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#4CAF50] rounded-full flex items-center justify-center transition-colors">
+              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#2d6d4c] rounded-full flex items-center justify-center transition-colors">
                 <Twitter size={18} />
               </a>
-              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#4CAF50] rounded-full flex items-center justify-center transition-colors">
+              <a href="#" className="w-9 h-9 bg-gray-800 hover:bg-[#2d6d4c] rounded-full flex items-center justify-center transition-colors">
                 <Youtube size={18} />
               </a>
             </div>
@@ -118,8 +118,8 @@ const Footer = () => {
             <p>GSTIN: {businessInfo.gstin}</p>
             <p>&copy; 2024 {businessInfo.name}. All rights reserved.</p>
             <div className="flex gap-4">
-              <a href="#" className="hover:text-[#4CAF50] transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-[#4CAF50] transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-[#2d6d4c] transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-[#2d6d4c] transition-colors">Terms of Service</a>
             </div>
           </div>
         </div>

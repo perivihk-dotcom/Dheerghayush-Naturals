@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Facebook, Instagram, Twitter, Youtube } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Phone, Mail, MapPin, Clock, Send, MessageCircle, Facebook, Instagram, Twitter, Youtube, ChevronDown, Check } from 'lucide-react';
 import { businessInfo } from '../data/mock';
+
+const subjectOptions = [
+  { value: 'product-inquiry', label: 'Product Inquiry' },
+  { value: 'order-status', label: 'Order Status' },
+  { value: 'bulk-order', label: 'Bulk Order' },
+  { value: 'feedback', label: 'Feedback' },
+  { value: 'other', label: 'Other' },
+];
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +19,19 @@ const ContactPage = () => {
     message: ''
   });
   const [submitted, setSubmitted] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -30,20 +51,7 @@ const ContactPage = () => {
 
   return (
     <main className="min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-[#4CAF50] to-[#8BC34A] py-16">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Get In Touch
-          </h1>
-          <p className="text-xl text-white/90 max-w-2xl mx-auto">
-            Have questions about our products? We'd love to hear from you. 
-            Send us a message and we'll respond as soon as possible.
-          </p>
-        </div>
-      </section>
-
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="grid lg:grid-cols-3 gap-12">
             {/* Contact Information */}
@@ -53,35 +61,35 @@ const ContactPage = () => {
                 
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#4CAF50]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Phone className="text-[#4CAF50]" size={22} />
+                    <div className="w-12 h-12 bg-[#2d6d4c]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Phone className="text-[#2d6d4c]" size={22} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">Phone</h3>
-                      <a href={`tel:${businessInfo.phone}`} className="text-gray-600 hover:text-[#4CAF50] block">
+                      <a href={`tel:${businessInfo.phone}`} className="text-gray-600 hover:text-[#2d6d4c] block">
                         {businessInfo.phone}
                       </a>
-                      <a href={`tel:${businessInfo.phone2}`} className="text-gray-600 hover:text-[#4CAF50] block">
+                      <a href={`tel:${businessInfo.phone2}`} className="text-gray-600 hover:text-[#2d6d4c] block">
                         {businessInfo.phone2}
                       </a>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#4CAF50]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Mail className="text-[#4CAF50]" size={22} />
+                    <div className="w-12 h-12 bg-[#2d6d4c]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Mail className="text-[#2d6d4c]" size={22} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">Email</h3>
-                      <a href={`mailto:${businessInfo.email}`} className="text-gray-600 hover:text-[#4CAF50]">
+                      <a href={`mailto:${businessInfo.email}`} className="text-gray-600 hover:text-[#2d6d4c]">
                         {businessInfo.email}
                       </a>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#4CAF50]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <MapPin className="text-[#4CAF50]" size={22} />
+                    <div className="w-12 h-12 bg-[#2d6d4c]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <MapPin className="text-[#2d6d4c]" size={22} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">Address</h3>
@@ -90,8 +98,8 @@ const ContactPage = () => {
                   </div>
 
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-[#4CAF50]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                      <Clock className="text-[#4CAF50]" size={22} />
+                    <div className="w-12 h-12 bg-[#2d6d4c]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Clock className="text-[#2d6d4c]" size={22} />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-800 mb-1">Business Hours</h3>
@@ -116,16 +124,16 @@ const ContactPage = () => {
                 <div className="mt-8 pt-8 border-t">
                   <h3 className="font-semibold text-gray-800 mb-4">Follow Us</h3>
                   <div className="flex gap-3">
-                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#4CAF50] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
+                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#2d6d4c] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
                       <Facebook size={20} />
                     </a>
-                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#4CAF50] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
+                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#2d6d4c] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
                       <Instagram size={20} />
                     </a>
-                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#4CAF50] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
+                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#2d6d4c] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
                       <Twitter size={20} />
                     </a>
-                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#4CAF50] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
+                    <a href="#" className="w-10 h-10 bg-gray-100 hover:bg-[#2d6d4c] hover:text-white rounded-full flex items-center justify-center transition-colors text-gray-600">
                       <Youtube size={20} />
                     </a>
                   </div>
@@ -139,8 +147,8 @@ const ContactPage = () => {
                 <h2 className="text-2xl font-bold text-gray-800 mb-6">Send us a Message</h2>
                 
                 {submitted && (
-                  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-green-700 font-medium">
+                  <div className="mb-6 p-4 bg-[#2d6d4c]/10 border border-[#2d6d4c]/30 rounded-lg">
+                    <p className="text-[#2d6d4c] font-medium">
                       Thank you for your message! We'll get back to you soon.
                     </p>
                   </div>
@@ -159,7 +167,7 @@ const ContactPage = () => {
                         value={formData.name}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                         placeholder="Enter your name"
                       />
                     </div>
@@ -174,7 +182,7 @@ const ContactPage = () => {
                         value={formData.email}
                         onChange={handleChange}
                         required
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                         placeholder="Enter your email"
                       />
                     </div>
@@ -191,7 +199,7 @@ const ContactPage = () => {
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                         placeholder="Enter your phone number"
                       />
                     </div>
@@ -199,21 +207,61 @@ const ContactPage = () => {
                       <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-2">
                         Subject *
                       </label>
-                      <select
-                        id="subject"
-                        name="subject"
-                        value={formData.subject}
-                        onChange={handleChange}
-                        required
-                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
-                      >
-                        <option value="">Select a subject</option>
-                        <option value="product-inquiry">Product Inquiry</option>
-                        <option value="order-status">Order Status</option>
-                        <option value="bulk-order">Bulk Order</option>
-                        <option value="feedback">Feedback</option>
-                        <option value="other">Other</option>
-                      </select>
+                      <div className="relative" ref={dropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className={`w-full px-4 py-3 border rounded-lg focus:outline-none transition-all bg-white cursor-pointer text-left flex items-center justify-between ${
+                            dropdownOpen 
+                              ? 'border-[#2d6d4c] ring-2 ring-[#2d6d4c]/20' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <span className={formData.subject ? 'text-gray-800' : 'text-gray-400'}>
+                            {formData.subject 
+                              ? subjectOptions.find(opt => opt.value === formData.subject)?.label 
+                              : 'Select a subject'}
+                          </span>
+                          <ChevronDown 
+                            size={20} 
+                            className={`text-gray-400 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+                          />
+                        </button>
+                        
+                        {/* Custom Dropdown Menu */}
+                        {dropdownOpen && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                            {subjectOptions.map((option) => (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={() => {
+                                  setFormData({ ...formData, subject: option.value });
+                                  setDropdownOpen(false);
+                                }}
+                                className={`w-full px-4 py-3 text-left flex items-center justify-between hover:bg-[#2d6d4c]/5 transition-colors ${
+                                  formData.subject === option.value 
+                                    ? 'bg-[#2d6d4c]/10 text-[#2d6d4c]' 
+                                    : 'text-gray-700'
+                                }`}
+                              >
+                                <span>{option.label}</span>
+                                {formData.subject === option.value && (
+                                  <Check size={18} className="text-[#2d6d4c]" />
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Hidden input for form validation */}
+                        <input
+                          type="hidden"
+                          name="subject"
+                          value={formData.subject}
+                          required
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -228,14 +276,14 @@ const ContactPage = () => {
                       onChange={handleChange}
                       required
                       rows={6}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors resize-none"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors resize-none"
                       placeholder="Write your message here..."
                     />
                   </div>
 
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 w-full md:w-auto bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 px-8 rounded-lg font-semibold transition-colors"
+                    className="flex items-center justify-center gap-2 w-full md:w-auto bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 px-8 rounded-lg font-semibold transition-colors"
                   >
                     <Send size={18} />
                     Send Message
@@ -248,7 +296,7 @@ const ContactPage = () => {
       </section>
 
       {/* Google Map Section */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
@@ -276,7 +324,7 @@ const ContactPage = () => {
               href="https://www.google.com/maps/place/Dheerghayush+naturals/@14.4393297,79.9758369,14z/data=!4m6!3m5!1s0x3a4cf3877a32464f:0x83e265bb829c59f8!8m2!3d14.4291837!4d79.971481!16s%2Fg%2F11wmtbsd71?entry=ttu&g_ep=EgoyMDI1MTEyMy4xIKXMDSoASAFQAw%3D%3D"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+              className="inline-flex items-center gap-2 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 px-6 rounded-lg font-semibold transition-colors"
             >
               <MapPin size={18} />
               Get Directions
@@ -286,7 +334,7 @@ const ContactPage = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-background">
         <div className="max-w-4xl mx-auto px-4">
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 text-center mb-12">
             Frequently Asked Questions
@@ -310,7 +358,7 @@ const ContactPage = () => {
                 a: 'Our products are sourced from certified organic farms. We ensure all our products meet the highest quality standards.'
               }
             ].map((faq, index) => (
-              <div key={index} className="bg-gray-50 rounded-xl p-6">
+              <div key={index} className="bg-white rounded-xl p-6 shadow-sm">
                 <h3 className="font-semibold text-gray-800 mb-2">{faq.q}</h3>
                 <p className="text-gray-600">{faq.a}</p>
               </div>

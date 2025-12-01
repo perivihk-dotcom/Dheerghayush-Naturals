@@ -23,15 +23,15 @@ const certificationImages = [
 // Main component that displays all 4 badges horizontally
 const CertificationBadges = ({ className = "" }) => {
   return (
-    <div className={`py-8 ${className}`}>
+    <div className={`py-8 bg-background ${className}`}>
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-10 lg:gap-16">
+        <div className="flex justify-center items-center gap-3 md:gap-10 lg:gap-16">
           {certificationImages.map((badge, index) => (
             <div key={index} className="flex-shrink-0">
               <img 
                 src={badge.src} 
                 alt={badge.alt}
-                className="object-contain transform hover:scale-105 transition-transform duration-300 w-28 h-28 md:w-36 md:h-36 lg:w-40 lg:h-40"
+                className="object-contain transform hover:scale-105 transition-transform duration-300 w-16 h-16 md:w-36 md:h-36 lg:w-40 lg:h-40"
               />
             </div>
           ))}

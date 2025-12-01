@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAdmin } from '../../context/AdminContext';
+import useBackgroundRefresh from '../../hooks/useBackgroundRefresh';
 import { Plus, Edit, Trash2, X, Save, Tag, Grid, FolderOpen } from 'lucide-react';
+import { toast } from '../../hooks/use-toast';
 
 const AdminCategories = () => {
   const { token, BACKEND_URL } = useAdmin();
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({
@@ -14,25 +14,27 @@ const AdminCategories = () => {
     image: ''
   });
 
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`${BACKEND_URL}/api/admin/categories`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setCategories(data);
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-    } finally {
-      setLoading(false);
+  // Fetch function for background refresh
+  const fetchCategoriesData = useCallback(async () => {
+    const response = await fetch(`${BACKEND_URL}/api/admin/categories`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.ok) {
+      return await response.json();
     }
-  };
+    throw new Error('Failed to fetch categories');
+  }, [BACKEND_URL, token]);
+
+  // Use background refresh - refreshes every 30 seconds silently
+  const { data: categoriesData, loading, refresh: refreshCategories } = useBackgroundRefresh(fetchCategoriesData, {
+    interval: 30000,
+    enabled: true,
+  });
+
+  const categories = categoriesData || [];
+
+  // Legacy fetchCategories for manual refresh after mutations
+  const fetchCategories = () => refreshCategories();
 
   const generateSlug = (name) => {
     return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -55,7 +57,7 @@ const AdminCategories = () => {
         closeModal();
       } else {
         const error = await response.json();
-        alert(error.detail || 'Failed to save category');
+        toast({ title: 'Error', description: error.detail || 'Failed to save category', variant: 'destructive' });
       }
     } catch (error) {
       console.error('Error saving category:', error);
@@ -70,7 +72,7 @@ const AdminCategories = () => {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) fetchCategories();
-      else alert('Failed to delete category');
+      else toast({ title: 'Error', description: 'Failed to delete category', variant: 'destructive' });
     } catch (error) {
       console.error('Error deleting category:', error);
     }
@@ -120,8 +122,8 @@ const AdminCategories = () => {
           <p className="text-xl md:text-2xl font-bold text-gray-900 mt-1">{categories.length}</p>
         </div>
         <div className="bg-white rounded-2xl p-4 md:p-5 border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center mb-2">
-            <FolderOpen className="w-5 h-5 text-green-600" />
+          <div className="w-10 h-10 bg-[#2d6d4c]/20 rounded-xl flex items-center justify-center mb-2">
+            <FolderOpen className="w-5 h-5 text-[#2d6d4c]" />
           </div>
           <p className="text-gray-500 text-xs md:text-sm">Active</p>
           <p className="text-xl md:text-2xl font-bold text-gray-900 mt-1">{activeCategories}</p>
@@ -167,7 +169,7 @@ const AdminCategories = () => {
               </div>
               <div className="p-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${category.is_active ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                  <span className={`w-2 h-2 rounded-full ${category.is_active ? 'bg-[#2d6d4c]' : 'bg-red-500'}`}></span>
                   <span className="text-sm text-gray-500">{category.is_active ? 'Active' : 'Inactive'}</span>
                 </div>
                 <div className="flex items-center gap-1">

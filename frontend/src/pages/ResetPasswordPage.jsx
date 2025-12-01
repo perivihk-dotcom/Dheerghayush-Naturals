@@ -101,9 +101,9 @@ const ResetPasswordPage = () => {
   // Loading state
   if (verifying) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-          <Loader2 size={48} className="animate-spin text-[#4CAF50] mx-auto mb-4" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+          <Loader2 size={48} className="animate-spin text-[#2d6d4c] mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-800">Verifying Reset Link...</h2>
           <p className="text-gray-500 mt-2">Please wait while we verify your reset link.</p>
         </div>
@@ -114,10 +114,10 @@ const ResetPasswordPage = () => {
   // Success state
   if (success) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-green-500" />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 bg-[#2d6d4c]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={32} className="text-[#2d6d4c]" />
           </div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Password Reset Successful!</h2>
           <p className="text-gray-600 mb-6">
@@ -125,7 +125,7 @@ const ResetPasswordPage = () => {
           </p>
           <Link
             to="/"
-            className="inline-block bg-[#4CAF50] hover:bg-[#43A047] text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+            className="inline-block bg-[#2d6d4c] hover:bg-[#43A047] text-white px-8 py-3 rounded-lg font-semibold transition-colors"
           >
             Go to Home & Sign In
           </Link>
@@ -137,8 +137,8 @@ const ResetPasswordPage = () => {
   // Invalid token state
   if (!tokenValid) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <XCircle size={32} className="text-red-500" />
           </div>
@@ -148,7 +148,7 @@ const ResetPasswordPage = () => {
           </p>
           <Link
             to="/"
-            className="inline-block bg-[#4CAF50] hover:bg-[#43A047] text-white px-8 py-3 rounded-lg font-semibold transition-colors"
+            className="inline-block bg-[#2d6d4c] hover:bg-[#43A047] text-white px-8 py-3 rounded-lg font-semibold transition-colors"
           >
             Go to Home
           </Link>
@@ -160,10 +160,10 @@ const ResetPasswordPage = () => {
 
   // Reset password form
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden max-w-md w-full">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="bg-card rounded-2xl shadow-lg overflow-hidden max-w-md w-full">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#4CAF50] to-[#8BC34A] p-6 text-white text-center">
+        <div className="bg-gradient-to-r from-[#2d6d4c] to-[#3d8b66] p-6 text-white text-center">
           <h1 className="text-2xl font-bold">Reset Your Password</h1>
           <p className="text-white/80 mt-1">Enter your new password for {email}</p>
         </div>
@@ -186,7 +186,7 @@ const ResetPasswordPage = () => {
                 placeholder="Enter new password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                 required
                 disabled={loading}
                 minLength={6}
@@ -211,7 +211,7 @@ const ResetPasswordPage = () => {
                 placeholder="Confirm new password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#4CAF50] transition-colors"
+                className="w-full pl-10 pr-12 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:border-[#2d6d4c] transition-colors"
                 required
                 disabled={loading}
                 minLength={6}
@@ -229,7 +229,7 @@ const ResetPasswordPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#4CAF50] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full bg-[#2d6d4c] hover:bg-[#43A047] text-white py-3 rounded-lg font-semibold transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {loading ? (
               <>
@@ -244,7 +244,7 @@ const ResetPasswordPage = () => {
 
         {/* Footer */}
         <div className="px-6 pb-6 text-center">
-          <Link to="/" className="text-[#4CAF50] font-medium hover:underline">
+          <Link to="/" className="text-[#2d6d4c] font-medium hover:underline">
             ← Back to Home
           </Link>
         </div>

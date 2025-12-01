@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Plus, Minus, Star, AlertTriangle } from 'lucide-react';
+import { useUser } from '../context/UserContext';
+import { useAuthModal } from '../context/AuthModalContext';
 
 const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
+  const { isAuthenticated } = useUser();
+  const { openAuthModal } = useAuthModal();
   const [quantity, setQuantity] = useState(1);
   const originalPrice = product.original_price || product.originalPrice;
   const discount = Math.round(((originalPrice - product.price) / originalPrice) * 100);
@@ -9,12 +13,16 @@ const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
   const isLowStock = stock > 0 && stock <= 10;
 
   const handleAddToCart = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+      return;
+    }
     onAddToCart({ ...product, quantity });
     setQuantity(1);
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
+    <div className="bg-card rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden">
       <div className="flex flex-row">
         {/* Product Image - Left Side */}
         <div className="relative w-[140px] sm:w-[180px] md:w-[220px] lg:w-[280px] flex-shrink-0">
@@ -31,7 +39,7 @@ const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
             </span>
           )}
           {(product.is_bestseller || product.isBestseller) && (
-            <span className="absolute top-2 right-2 bg-[#4CAF50] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
+            <span className="absolute top-2 right-2 bg-[#2d6d4c] text-white text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 sm:py-1 rounded">
               Bestseller
             </span>
           )}
@@ -46,7 +54,7 @@ const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
         <div className="flex-1 p-3 sm:p-4 md:p-5 lg:p-6 flex flex-col justify-between min-w-0">
           <div>
             {/* Product Name */}
-            <h3 className="font-semibold text-gray-800 text-sm sm:text-base md:text-lg lg:text-xl mb-1 sm:mb-2 line-clamp-2 hover:text-[#4CAF50] transition-colors">
+            <h3 className="font-semibold text-gray-800 text-sm sm:text-base md:text-lg lg:text-xl mb-1 sm:mb-2 line-clamp-2 hover:text-[#2d6d4c] transition-colors">
               {product.name}
             </h3>
             
@@ -117,7 +125,7 @@ const ProductListCard = ({ product, onAddToCart, isNewArrival }) => {
               
               <button 
                 onClick={handleAddToCart}
-                className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 bg-[#4CAF50] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-3 sm:px-4 md:px-6 rounded-lg font-medium transition-colors text-xs sm:text-sm md:text-base"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-1 sm:gap-2 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-3 sm:px-4 md:px-6 rounded-lg font-medium transition-colors text-xs sm:text-sm md:text-base"
               >
                 <span>Add</span>
                 <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
