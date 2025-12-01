@@ -50,6 +50,11 @@ brevo_configuration.api_key['api-key'] = BREVO_API_KEY
 # Create the main app
 app = FastAPI(title="Dheerghayush Naturals API")
 
+# Root health check endpoint
+@app.get("/")
+async def root_health():
+    return {"status": "healthy", "message": "Dheerghayush Naturals API is running", "version": "1.0"}
+
 # Custom exception handler to ensure JSON responses
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
