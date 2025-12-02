@@ -98,27 +98,31 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
         </h3>
         <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5">{product.weight}</p>
         
-        {/* Rating */}
-        {rating.total_reviews > 0 && (
-          <div className="flex items-center gap-1 mb-1">
-            <div className="flex">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  size={10} 
-                  className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
-                />
-              ))}
-            </div>
-            <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
+        {/* Rating - always show stars */}
+        <div className="flex items-center gap-1 mb-1">
+          <div className="flex">
+            {[...Array(5)].map((_, i) => (
+              <Star 
+                key={i} 
+                size={10} 
+                className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
+              />
+            ))}
           </div>
-        )}
+          {rating.total_reviews > 0 && (
+            <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
+          )}
+        </div>
         
-        {/* Low Stock Warning */}
-        {isLowStock && (
+        {/* Stock Status */}
+        {isLowStock ? (
           <div className="flex items-center gap-1 text-red-500 mb-1">
             <AlertTriangle size={12} />
             <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
+          </div>
+        ) : !isOutOfStock && (
+          <div className="flex items-center gap-1 text-green-600 mb-1">
+            <span className="text-[10px] sm:text-xs font-medium">Available</span>
           </div>
         )}
         
