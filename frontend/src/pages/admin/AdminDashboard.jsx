@@ -10,6 +10,8 @@ import {
 import { businessInfo } from '../../data/mock';
 import AdminProducts from './AdminProducts';
 import AdminOrders from './AdminOrders';
+import AdminReplacements from './AdminReplacements';
+import AdminRefunds from './AdminRefunds';
 import AdminCategories from './AdminCategories';
 import AdminBanners from './AdminBanners';
 
@@ -110,6 +112,20 @@ const AdminDashboard = () => {
         shippedCount: orders.filter(o => o.order_status === 'shipped').length,
         outForDeliveryCount: orders.filter(o => o.order_status === 'out_for_delivery').length,
         deliveredCount: orders.filter(o => o.order_status === 'delivered').length,
+        // Replacement Pipeline
+        replacementRequestedCount: orders.filter(o => o.order_status === 'replacement_requested').length,
+        replacementAcceptedCount: orders.filter(o => o.order_status === 'replacement_accepted').length,
+        replacementProcessingCount: orders.filter(o => o.order_status === 'replacement_processing').length,
+        replacementShippedCount: orders.filter(o => o.order_status === 'replacement_shipped').length,
+        replacementOutForDeliveryCount: orders.filter(o => o.order_status === 'replacement_out_for_delivery').length,
+        replacementDeliveredCount: orders.filter(o => o.order_status === 'replacement_delivered').length,
+        replacementRejectedCount: orders.filter(o => o.order_status === 'replacement_rejected').length,
+        totalReplacementsCount: orders.filter(o => o.order_status?.startsWith('replacement_')).length,
+        // Refund Pipeline (only prepaid/RAZORPAY orders)
+        refundProcessingCount: orders.filter(o => o.order_status === 'cancelled' && o.payment_method === 'RAZORPAY' && o.payment_status === 'paid' && o.refund_status === 'processing').length,
+        refundCompletedCount: orders.filter(o => o.refund_status === 'completed').length,
+        refundFailedCount: orders.filter(o => o.refund_status === 'failed').length,
+        cancelledPrepaidCount: orders.filter(o => o.order_status === 'cancelled' && o.payment_method === 'RAZORPAY' && o.payment_status === 'paid').length
       };
     }
     throw new Error('Failed to fetch notification counts');
@@ -168,7 +184,10 @@ const AdminDashboard = () => {
         return <AdminProducts />;
       case 'orders':
         return <AdminOrders initialFilter={initialFilter} targetOrderId={targetOrderId} onFilterApplied={() => { setInitialFilter(null); setTargetOrderId(null); }} />;
-
+      case 'replacements':
+        return <AdminReplacements initialFilter={initialFilter} onFilterApplied={() => setInitialFilter(null)} />;
+      case 'refunds':
+        return <AdminRefunds initialFilter={initialFilter} onFilterApplied={() => setInitialFilter(null)} />;
       case 'categories':
         return <AdminCategories />;
       case 'banners':
@@ -397,7 +416,110 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Replacement Pipeline */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
+                    <RefreshCw className="w-4 h-4 text-pink-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Replacement Pipeline</h3>
+                  {replacementRequestedCount > 0 && (
+                    <span className="bg-pink-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                      {replacementRequestedCount} New
+                    </span>
+                  )}
+                </div>
+                <button 
+                  onClick={() => setActiveTab('replacements')}
+                  className="text-pink-600 text-sm font-medium hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
+                <div className="bg-pink-50 rounded-xl p-3 text-center cursor-pointer hover:bg-pink-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_requested')}>
+                  <AlertCircle className="w-5 h-5 text-pink-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-pink-700">{replacementRequestedCount}</p>
+                  <p className="text-xs text-pink-600">Requested</p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-3 text-center cursor-pointer hover:bg-green-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_accepted')}>
+                  <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-green-700">{replacementAcceptedCount}</p>
+                  <p className="text-xs text-green-600">Accepted</p>
+                </div>
+                <div className="bg-blue-50 rounded-xl p-3 text-center cursor-pointer hover:bg-blue-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_processing')}>
+                  <Package className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-blue-700">{replacementProcessingCount}</p>
+                  <p className="text-xs text-blue-600">Processing</p>
+                </div>
+                <div className="bg-indigo-50 rounded-xl p-3 text-center cursor-pointer hover:bg-indigo-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_shipped')}>
+                  <Truck className="w-5 h-5 text-indigo-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-indigo-700">{replacementShippedCount}</p>
+                  <p className="text-xs text-indigo-600">Shipped</p>
+                </div>
+                <div className="bg-cyan-50 rounded-xl p-3 text-center cursor-pointer hover:bg-cyan-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_out_for_delivery')}>
+                  <Truck className="w-5 h-5 text-cyan-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-cyan-700">{replacementOutForDeliveryCount}</p>
+                  <p className="text-xs text-cyan-600">Out for Delivery</p>
+                </div>
+                <div className="bg-emerald-50 rounded-xl p-3 text-center cursor-pointer hover:bg-emerald-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_delivered')}>
+                  <CheckCircle className="w-5 h-5 text-emerald-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-emerald-700">{replacementDeliveredCount}</p>
+                  <p className="text-xs text-emerald-600">Delivered</p>
+                </div>
+                <div className="bg-red-50 rounded-xl p-3 text-center cursor-pointer hover:bg-red-100 transition" onClick={() => navigateWithFilter('replacements', 'replacement_rejected')}>
+                  <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-red-700">{replacementRejectedCount}</p>
+                  <p className="text-xs text-red-600">Rejected</p>
+                </div>
+              </div>
+            </div>
 
+            {/* Refund Pipeline */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-4 md:p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-amber-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Refund Pipeline</h3>
+                  {refundProcessingCount > 0 && (
+                    <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                      {refundProcessingCount} Pending
+                    </span>
+                  )}
+                </div>
+                <button 
+                  onClick={() => setActiveTab('refunds')}
+                  className="text-amber-600 text-sm font-medium hover:underline"
+                >
+                  View All
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-red-50 rounded-xl p-3 text-center cursor-pointer hover:bg-red-100 transition" onClick={() => navigateWithFilter('refunds', 'all')}>
+                  <XCircle className="w-5 h-5 text-red-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-red-700">{cancelledPrepaidCount}</p>
+                  <p className="text-xs text-red-600">Cancelled (Prepaid)</p>
+                </div>
+                <div className="bg-amber-50 rounded-xl p-3 text-center cursor-pointer hover:bg-amber-100 transition" onClick={() => navigateWithFilter('refunds', 'processing')}>
+                  <Clock className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-amber-700">{refundProcessingCount}</p>
+                  <p className="text-xs text-amber-600">Processing</p>
+                </div>
+                <div className="bg-green-50 rounded-xl p-3 text-center cursor-pointer hover:bg-green-100 transition" onClick={() => navigateWithFilter('refunds', 'completed')}>
+                  <CheckCircle className="w-5 h-5 text-green-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-green-700">{refundCompletedCount}</p>
+                  <p className="text-xs text-green-600">Completed</p>
+                </div>
+                <div className="bg-rose-50 rounded-xl p-3 text-center cursor-pointer hover:bg-rose-100 transition" onClick={() => navigateWithFilter('refunds', 'failed')}>
+                  <AlertCircle className="w-5 h-5 text-rose-600 mx-auto mb-1" />
+                  <p className="text-xl font-bold text-rose-700">{refundFailedCount}</p>
+                  <p className="text-xs text-rose-600">Failed</p>
+                </div>
+              </div>
+            </div>
 
             {/* Recent Orders */}
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
