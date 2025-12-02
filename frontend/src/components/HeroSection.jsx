@@ -67,15 +67,17 @@ const HeroSection = () => {
         >
           {/* ===== MOBILE VIEW - Full Banner Style ===== */}
           <div className="absolute inset-0 md:hidden">
-            {/* Background Image - Full size */}
-            <img 
-              src={slide.image}
-              alt={slide.title}
-              className="absolute inset-0 w-full h-[90%] object-cover"
-            />
+            {/* Background Image - Full size with contain to show complete image */}
+            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100">
+              <img 
+                src={slide.image}
+                alt={slide.title}
+                className="w-full h-full object-contain"
+              />
+            </div>
             
             {/* Light overlay for readability */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
             
             {/* Content at bottom */}
             <div className="absolute bottom-0 left-0 right-0 p-4 pb-12">
