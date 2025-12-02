@@ -92,79 +92,75 @@ const ProductCard = ({ product, onAddToCart, isNewArrival }) => {
         )}
       </div>
       
-      <div className="p-2.5 sm:p-4 flex flex-col h-[180px] sm:h-[220px]">
-        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base mb-1 line-clamp-2 h-[32px] sm:h-[40px] group-hover:text-[#2d6d4c] transition-colors">
+      <div className="p-2.5 sm:p-4 flex flex-col min-h-[160px] sm:min-h-[200px]">
+        <h3 className="font-semibold text-gray-800 text-xs sm:text-sm md:text-base mb-1 line-clamp-2 min-h-[2.5em] group-hover:text-[#2d6d4c] transition-colors leading-tight">
           {product.name}
         </h3>
-        <p className="text-[10px] sm:text-sm text-gray-500 mb-1">{product.weight}</p>
+        <p className="text-[10px] sm:text-xs text-gray-500 mb-1.5">{product.weight}</p>
         
-        {/* Rating - fixed height container */}
-        <div className="h-[16px] sm:h-[18px] mb-1">
-          {rating.total_reviews > 0 && (
-            <div className="flex items-center gap-1">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    size={10} 
-                    className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
-                  />
-                ))}
-              </div>
-              <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
+        {/* Rating */}
+        {rating.total_reviews > 0 && (
+          <div className="flex items-center gap-1 mb-1">
+            <div className="flex">
+              {[...Array(5)].map((_, i) => (
+                <Star 
+                  key={i} 
+                  size={10} 
+                  className={i < Math.round(rating.average_rating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"} 
+                />
+              ))}
             </div>
-          )}
-        </div>
+            <span className="text-[10px] text-gray-500">({rating.total_reviews})</span>
+          </div>
+        )}
         
-        {/* Low Stock Warning - fixed height container */}
-        <div className="h-[16px] sm:h-[18px] mb-1">
-          {isLowStock && (
-            <div className="flex items-center gap-1 text-red-500">
-              <AlertTriangle size={12} />
-              <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
-            </div>
-          )}
-        </div>
+        {/* Low Stock Warning */}
+        {isLowStock && (
+          <div className="flex items-center gap-1 text-red-500 mb-1">
+            <AlertTriangle size={12} />
+            <span className="text-[10px] sm:text-xs font-medium">Few left!</span>
+          </div>
+        )}
         
-        <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 mb-2 sm:mb-3 mt-auto">
-          <span className="text-sm sm:text-lg font-bold text-gray-800">₹{product.price.toFixed(2)}</span>
+        <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-3 mt-auto">
+          <span className="text-sm sm:text-base font-bold text-gray-800">₹{product.price.toFixed(2)}</span>
           {originalPrice > product.price && (
-            <span className="text-[10px] sm:text-sm text-gray-400 line-through">₹{originalPrice}</span>
+            <span className="text-[10px] sm:text-xs text-gray-400 line-through">₹{originalPrice}</span>
           )}
         </div>
         
         {isOutOfStock ? (
           <button 
             disabled
-            className="w-full flex items-center justify-center gap-1 sm:gap-2 bg-gray-300 text-gray-500 py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium cursor-not-allowed text-xs sm:text-sm"
+            className="w-full flex items-center justify-center gap-1 bg-gray-300 text-gray-500 py-2 px-3 rounded-lg font-medium cursor-not-allowed text-xs sm:text-sm"
           >
             <span>Out of Stock</span>
           </button>
         ) : (
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-            <div className="flex items-center justify-center border border-gray-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center border border-gray-200 rounded-lg flex-shrink-0">
               <button 
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 className="p-1.5 sm:p-2 hover:bg-gray-50 transition-colors"
               >
-                <Minus size={12} className="sm:w-[14px] sm:h-[14px]" />
+                <Minus size={14} />
               </button>
-              <span className="px-2 sm:px-3 text-xs sm:text-sm font-medium">{quantity}</span>
+              <span className="px-2 sm:px-3 text-xs sm:text-sm font-medium min-w-[20px] text-center">{quantity}</span>
               <button 
                 onClick={handleIncreaseQuantity}
                 disabled={quantity >= stock}
                 className={`p-1.5 sm:p-2 transition-colors ${quantity >= stock ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}`}
               >
-                <Plus size={12} className="sm:w-[14px] sm:h-[14px]" />
+                <Plus size={14} />
               </button>
             </div>
             
             <button 
               onClick={handleAddToCart}
-              className="flex-1 flex items-center justify-center gap-1 sm:gap-2 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-1.5 sm:py-2 px-2 sm:px-4 rounded-lg font-medium transition-colors text-xs sm:text-sm"
+              className="flex-1 flex items-center justify-center gap-1.5 bg-[#2d6d4c] hover:bg-[#43A047] text-white py-2 px-3 rounded-lg font-medium transition-colors text-xs sm:text-sm"
             >
               <span>Add</span>
-              <ShoppingCart size={14} className="sm:w-4 sm:h-4" />
+              <ShoppingCart size={14} />
             </button>
           </div>
         )}
