@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdmin } from '../../context/AdminContext';
-import { Eye, EyeOff, Leaf, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 
 const AdminLogin = () => {
   const [email, setEmail] = useState('');
@@ -49,9 +49,11 @@ const AdminLogin = () => {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#2d6d4c] rounded-full mb-4">
-            <Leaf className="w-8 h-8 text-white" />
-          </div>
+          <img 
+            src="/logo.png" 
+            alt="Dheerghayush Naturals Logo" 
+            className="w-24 h-24 mx-auto mb-4 object-contain"
+          />
           <h1 className="text-2xl font-bold text-gray-900">Dheerghayush Naturals</h1>
           <p className="text-gray-600 mt-1">Admin Panel</p>
         </div>
